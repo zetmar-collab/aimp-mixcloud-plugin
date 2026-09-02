@@ -50,12 +50,15 @@ public class ProcessRunnerTests
     [Fact]
     public void AnulowanieKonczyProcesPrzedTimeoutem()
     {
+        var start = DateTime.UtcNow;
         using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1)))
         {
             var res = new ProcessRunner().Run(Cmd, "/c ping -n 30 127.0.0.1 > nul",
                 TimeSpan.FromMinutes(5), cts.Token);
 
             Assert.True(res.TimedOut);
+            // Musi wrocic po anulowaniu, a nie po zakonczeniu 30-sekundowego procesu.
+            Assert.True(DateTime.UtcNow - start < TimeSpan.FromSeconds(15));
         }
     }
 

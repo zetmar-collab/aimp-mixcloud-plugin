@@ -19,20 +19,46 @@ namespace Mixcloud.Core.Process
                 StandardErrorEncoding = Encoding.UTF8
             };
 
+            // Wspolny obiekt blokady chroni zarowno bufory wyjscia, jak i flagi
+            // "potok zamkniety" - zadny inny obiekt (np. ManualResetEventSlim) nie jest
+            // wspoldzielony z watkami callbackow, wiec nie ma czego dispose'owac pod nimi.
+            var sync = new object();
             var stdout = new StringBuilder();
             var stderr = new StringBuilder();
+            var outputClosed = false;
+            var errorClosed = false;
 
             using (var proc = new System.Diagnostics.Process { StartInfo = psi })
-            using (var outDone = new ManualResetEventSlim(false))
-            using (var errDone = new ManualResetEventSlim(false))
             {
                 proc.OutputDataReceived += (s, e) =>
                 {
-                    if (e.Data == null) outDone.Set(); else stdout.AppendLine(e.Data);
+                    lock (sync)
+                    {
+                        if (e.Data == null)
+                        {
+                            outputClosed = true;
+                            Monitor.PulseAll(sync);
+                        }
+                        else
+                        {
+                            stdout.AppendLine(e.Data);
+                        }
+                    }
                 };
                 proc.ErrorDataReceived += (s, e) =>
                 {
-                    if (e.Data == null) errDone.Set(); else stderr.AppendLine(e.Data);
+                    lock (sync)
+                    {
+                        if (e.Data == null)
+                        {
+                            errorClosed = true;
+                            Monitor.PulseAll(sync);
+                        }
+                        else
+                        {
+                            stderr.AppendLine(e.Data);
+                        }
+                    }
                 };
 
                 proc.Start();
@@ -45,26 +71,46 @@ namespace Mixcloud.Core.Process
                     if (ct.IsCancellationRequested || DateTime.UtcNow > deadline)
                     {
                         try { proc.Kill(); } catch { /* juz zakonczony */ }
-                        return new ProcessResult
-                        {
-                            ExitCode = -1,
-                            StdOut = stdout.ToString(),
-                            StdErr = stderr.ToString(),
-                            TimedOut = true
-                        };
+
+                        return BuildResult(sync, stdout, stderr, ref outputClosed, ref errorClosed, exitCode: -1, timedOut: true);
                     }
                     Thread.Sleep(50);
                 }
 
-                outDone.Wait(TimeSpan.FromSeconds(2));
-                errDone.Wait(TimeSpan.FromSeconds(2));
+                return BuildResult(sync, stdout, stderr, ref outputClosed, ref errorClosed, exitCode: proc.ExitCode, timedOut: false);
+            }
+        }
+
+        /// <summary>
+        /// Krotko i w sposob ograniczony czasowo czeka na doplyniecie juz zbuforowanych
+        /// danych z potokow (rowniez po Kill()), po czym pod ta sama blokada odczytuje
+        /// bufory - bez czekania na samoistne zakonczenie procesu.
+        /// </summary>
+        private static ProcessResult BuildResult(
+            object sync,
+            StringBuilder stdout,
+            StringBuilder stderr,
+            ref bool outputClosed,
+            ref bool errorClosed,
+            int exitCode,
+            bool timedOut)
+        {
+            lock (sync)
+            {
+                var waitDeadline = DateTime.UtcNow + TimeSpan.FromSeconds(2);
+                while (!outputClosed || !errorClosed)
+                {
+                    var remaining = waitDeadline - DateTime.UtcNow;
+                    if (remaining <= TimeSpan.Zero) break;
+                    Monitor.Wait(sync, remaining);
+                }
 
                 return new ProcessResult
                 {
-                    ExitCode = proc.ExitCode,
+                    ExitCode = exitCode,
                     StdOut = stdout.ToString(),
                     StdErr = stderr.ToString(),
-                    TimedOut = false
+                    TimedOut = timedOut
                 };
             }
         }
