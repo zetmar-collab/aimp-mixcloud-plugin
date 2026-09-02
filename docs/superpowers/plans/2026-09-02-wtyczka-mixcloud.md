@@ -980,7 +980,9 @@ git add -A && git commit -m "ProcessRunner: uruchamianie procesow z timeoutem i 
   `YtDlpService(IProcessRunner runner, string exePath)` i metodami:
   - `IReadOnlyList<string> DumpListing(MixcloudUrl url, int limit, CancellationToken ct)`
   - `string DumpCloudcast(MixcloudUrl url, CancellationToken ct)`
-  - `string ResolveDirectUrl(string pageUrl, CancellationToken ct)`
+  - `string ResolveDirectUrl(MixcloudUrl url, CancellationToken ct)` —
+    przyjmuje **zwalidowany** adres, tak jak pozostale metody. Surowy `string`
+    pozwalalby wstrzyknac flage `--exec` przez adres z cudzyslowem.
   - `string GetVersion(CancellationToken ct)`
   - stałe publiczne `FormatSelector`, `ListingTimeout`, `ResolveTimeout`
   - `sealed class YtDlpException : Exception` z właściwością `string StdErr`
@@ -2560,7 +2562,9 @@ podmieniony adres. W przeciwnym razie pomiń i przejdź do zadania 13.
 - Test: `tests/Mixcloud.Core.Tests/StreamMediaSourceTests.cs`
 
 **Interfaces:**
-- Consumes: `YtDlpService` (zad. 6).
+- Consumes: `YtDlpService` (zad. 6). Uwaga: `ResolveDirectUrl` przyjmuje
+  `MixcloudUrl`, nie `string` — opakuj adres przez `MixcloudUrl.Parse`
+  i potraktuj wynik inny niz `Cloudcast` jako brak wyniku.
 - Produces:
   - `interface IMediaSource` z metodą
     `string GetPlayableUrl(string pageUrl, CancellationToken ct)`
@@ -2685,7 +2689,7 @@ namespace Mixcloud.Core.Media
             {
                 // Adres zawiera parametr ?sig= i wygasa, dlatego trzymamy go
                 // tylko przez _lifetime, a potem rozwiazujemy od nowa.
-                var resolved = _ytDlp.ResolveDirectUrl(pageUrl, ct);
+                var resolved = _ytDlp.ResolveDirectUrl(MixcloudUrl.Parse(pageUrl), ct);
                 if (string.IsNullOrEmpty(resolved)) return null;
 
                 _cache[pageUrl] = new Entry { Url = resolved, ResolvedUtc = DateTime.UtcNow };
@@ -3419,7 +3423,7 @@ public class LiveMixcloudTests
         var first = MixcloudCatalog.ParseFlatListing(
             Service().DumpListing(url, 1, CancellationToken.None)).Tracks.First();
 
-        var direct = Service().ResolveDirectUrl(first.PageUrl, CancellationToken.None);
+        var direct = Service().ResolveDirectUrl(MixcloudUrl.Parse(first.PageUrl), CancellationToken.None);
 
         Assert.NotNull(direct);
         Assert.StartsWith("http", direct);
