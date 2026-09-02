@@ -189,7 +189,7 @@ W `tests/Mixcloud.Core.Tests/Mixcloud.Core.Tests.csproj` dodaj do istniejącego
 
 `src/Mixcloud.Plugin/MixcloudPlugin.cs`. Na tym etapie wtyczka tylko dopisuje
 pozycję menu — to jest cały dowód, którego szukamy. Napis jest tu tymczasowo
-wpisany na sztywno, bo lokalizacja powstaje w zadaniu 9; zadanie 9 go usuwa.
+wpisany na sztywno, bo lokalizacja powstaje w zadaniu 10; zadanie 10 go usuwa.
 
 ```csharp
 using AIMP.SDK;
@@ -704,6 +704,7 @@ git add -A && git commit -m "SlugTitle: czytelny tytul ze slugu adresu"
 - Create: `src/Mixcloud.Core/Process/IProcessRunner.cs`
 - Create: `src/Mixcloud.Core/Process/ProcessRunner.cs`
 - Create: `tests/Mixcloud.Core.Tests/FakeProcessRunner.cs`
+- Test: `tests/Mixcloud.Core.Tests/ProcessRunnerTests.cs`
 
 **Interfaces:**
 - Produces:
@@ -864,14 +865,102 @@ public sealed class FakeProcessRunner : IProcessRunner
 }
 ```
 
-- [ ] **Krok 4: Zbuduj i sprawdź, że wszystko się kompiluje**
+- [ ] **Krok 4: Napisz testy na prawdziwych procesach**
 
-Run: `dotnet build Mixcloud.sln -c Debug`
-Oczekiwane: sukces, zero błędów. (Testów zachowania `ProcessRunner` nie
-piszemy — to cienkie opakowanie API systemowego; sprawdza go zadanie 6
-przez atrapę.)
+`ProcessRunner` nie jest samym opakowaniem API — zawiera logikę timeoutu,
+zabijania procesu i asynchronicznego odczytu obu strumieni. Zakleszczenie na
+buforze strumienia jest później bardzo trudne do zdiagnozowania, więc pokrywamy
+to testami. `cmd.exe` jest zawsze obecny w Windows, więc testy są
+deterministyczne i nie wymagają sieci.
 
-- [ ] **Krok 5: Commit**
+`tests/Mixcloud.Core.Tests/ProcessRunnerTests.cs`:
+
+```csharp
+using System;
+using System.Threading;
+using Mixcloud.Core.Process;
+using Xunit;
+
+public class ProcessRunnerTests
+{
+    private static readonly string Cmd =
+        Environment.ExpandEnvironmentVariables(@"%SystemRoot%\System32\cmd.exe");
+
+    [Fact]
+    public void PrzechwytujeStandardoweWyjscie()
+    {
+        var res = new ProcessRunner().Run(Cmd, "/c echo hello", TimeSpan.FromSeconds(30), CancellationToken.None);
+
+        Assert.False(res.TimedOut);
+        Assert.Equal(0, res.ExitCode);
+        Assert.Contains("hello", res.StdOut);
+    }
+
+    [Fact]
+    public void PrzechwytujeStandardowyBlad()
+    {
+        var res = new ProcessRunner().Run(Cmd, "/c echo problem 1>&2", TimeSpan.FromSeconds(30), CancellationToken.None);
+
+        Assert.Contains("problem", res.StdErr);
+    }
+
+    [Fact]
+    public void ZwracaNiezerowyKodWyjscia()
+    {
+        var res = new ProcessRunner().Run(Cmd, "/c exit 3", TimeSpan.FromSeconds(30), CancellationToken.None);
+
+        Assert.False(res.TimedOut);
+        Assert.Equal(3, res.ExitCode);
+    }
+
+    [Fact]
+    public void ZabijaProcesPoPrzekroczeniuTimeoutu()
+    {
+        var start = DateTime.UtcNow;
+        var res = new ProcessRunner().Run(Cmd, "/c ping -n 30 127.0.0.1 > nul",
+            TimeSpan.FromSeconds(2), CancellationToken.None);
+
+        Assert.True(res.TimedOut);
+        // Musi wrocic po timeoucie, a nie po zakonczeniu 30-sekundowego procesu.
+        Assert.True(DateTime.UtcNow - start < TimeSpan.FromSeconds(15));
+    }
+
+    [Fact]
+    public void AnulowanieKonczyProcesPrzedTimeoutem()
+    {
+        using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1)))
+        {
+            var res = new ProcessRunner().Run(Cmd, "/c ping -n 30 127.0.0.1 > nul",
+                TimeSpan.FromMinutes(5), cts.Token);
+
+            Assert.True(res.TimedOut);
+        }
+    }
+
+    [Fact]
+    public void DuzeWyjscieNieZakleszczaOdczytu()
+    {
+        // Synchroniczny ReadToEnd na obu strumieniach zakleszcza sie, gdy proces
+        // zapelni bufor. Ten test pilnuje, ze odczyt jest asynchroniczny.
+        var res = new ProcessRunner().Run(Cmd,
+            "/c for /L %i in (1,1,2000) do @echo wiersz-wypelniajacy-bufor-%i",
+            TimeSpan.FromSeconds(60), CancellationToken.None);
+
+        Assert.False(res.TimedOut);
+        Assert.Equal(0, res.ExitCode);
+        Assert.Contains("wiersz-wypelniajacy-bufor-2000", res.StdOut);
+    }
+}
+```
+
+- [ ] **Krok 5: Uruchom testy i potwierdź, że przechodzą**
+
+Run: `dotnet test tests/Mixcloud.Core.Tests --filter ProcessRunnerTests -v:minimal`
+Oczekiwane: PASS, 6 testów. Jeśli `DuzeWyjscieNieZakleszczaOdczytu` zawiesza
+się do timeoutu, odczyt strumieni nie jest asynchroniczny — popraw
+implementację, nie test.
+
+- [ ] **Krok 6: Commit**
 
 ```bash
 git add -A && git commit -m "ProcessRunner: uruchamianie procesow z timeoutem i anulowaniem"
@@ -3386,7 +3475,7 @@ git add -A && git commit -m "Test integracyjny na zywym Mixcloudzie i README"
 | Rozstrzygnięcie trybu odtwarzania | 2 |
 | Walidacja adresów, odrzucanie obcych domen | 3 |
 | Tytuł ze slugu (flat nie ma tytułów) | 4 |
-| Procesy z timeoutem, poza wątkiem UI | 5, 11 |
+| Procesy z timeoutem, zabijanie, poza wątkiem UI | 5, 11 |
 | Leniwe listowanie z twardym limitem | 6 |
 | Selektor `http/hls-192/bestaudio` | 6 |
 | Parsowanie na prawdziwych fixture'ach | 7 |
