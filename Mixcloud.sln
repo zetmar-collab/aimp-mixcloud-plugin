@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{95308406-1CBC-4C7E-BEBE-961186396883}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mixcloud.Core", "src\Mixcloud.Core\Mixcloud.Core.csproj", "{80EDA39E-E246-4127-B0D1-C57D9CF2A130}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mixcloud.Plugin", "src\Mixcloud.Plugin\Mixcloud.Plugin.csproj", "{79F40FA3-7F02-42A0-BFB7-F9F98A92D464}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{CB19F85C-D1AD-4BCC-A7C3-54EDBD6D4DB3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mixcloud.Core.Tests", "tests\Mixcloud.Core.Tests\Mixcloud.Core.Tests.csproj", "{729279BC-3B6B-43C5-8E49-C8CFF79CC554}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{80EDA39E-E246-4127-B0D1-C57D9CF2A130}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{80EDA39E-E246-4127-B0D1-C57D9CF2A130}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{80EDA39E-E246-4127-B0D1-C57D9CF2A130}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{80EDA39E-E246-4127-B0D1-C57D9CF2A130}.Release|Any CPU.Build.0 = Release|Any CPU
+		{79F40FA3-7F02-42A0-BFB7-F9F98A92D464}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{79F40FA3-7F02-42A0-BFB7-F9F98A92D464}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{79F40FA3-7F02-42A0-BFB7-F9F98A92D464}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{79F40FA3-7F02-42A0-BFB7-F9F98A92D464}.Release|Any CPU.Build.0 = Release|Any CPU
+		{729279BC-3B6B-43C5-8E49-C8CFF79CC554}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{729279BC-3B6B-43C5-8E49-C8CFF79CC554}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{729279BC-3B6B-43C5-8E49-C8CFF79CC554}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{729279BC-3B6B-43C5-8E49-C8CFF79CC554}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{80EDA39E-E246-4127-B0D1-C57D9CF2A130} = {95308406-1CBC-4C7E-BEBE-961186396883}
+		{79F40FA3-7F02-42A0-BFB7-F9F98A92D464} = {95308406-1CBC-4C7E-BEBE-961186396883}
+		{729279BC-3B6B-43C5-8E49-C8CFF79CC554} = {CB19F85C-D1AD-4BCC-A7C3-54EDBD6D4DB3}
+	EndGlobalSection
+EndGlobal
