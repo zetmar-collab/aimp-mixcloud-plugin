@@ -219,9 +219,17 @@ uprawnień administratora przy każdej aktualizacji.
 - Pierwszy start: pobranie najnowszego wydania z GitHub Releases.
 - Sprawdzanie aktualizacji: raz na dobę, porównanie tagu `releases/latest`
   z zapisanym lokalnie.
-- Nowa wersja ląduje **obok** działającej binarki i zostaje podmieniona
-  atomowo dopiero **przy następnym starcie AIMP**. Nigdy nie podmieniamy pliku,
-  który właśnie jest uruchomiony.
+- Nowa wersja ląduje **obok** działającej binarki i zostaje podmieniona dopiero
+  **przy następnym starcie AIMP**. Nigdy nie podmieniamy pliku, który właśnie
+  jest uruchomiony.
+- **Nieudane pobranie kasuje plik oczekujący.** Przerwany transfer zostawia
+  obcięty plik; bez tego zostałby przy następnym starcie awansowany na miejsce
+  działającej binarki i zepsułby odtwarzanie. Przed awansem sprawdzamy również
+  rozmiar. Tag wersji zapisujemy dopiero po udanym pobraniu, żeby ponowna próba
+  nie została pominięta.
+- **Podmiana zachowuje kopię zapasową.** Stara binarka idzie najpierw na bok,
+  nowa wchodzi na jej miejsce, a kopia znika dopiero po powodzeniu. Sekwencja
+  „skasuj, potem przenieś" mogła zostawić użytkownika bez żadnej binarki.
 - Brak sieci albo błąd pobierania to cichy no-op — odtwarzanie działa dalej na
   dotychczasowej wersji. Awaria aktualizacji nie może psuć odtwarzania.
 
