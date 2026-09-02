@@ -49,7 +49,7 @@ public class YtDlpServiceTests
     {
         var r = new FakeProcessRunner { NextStdOut = "https://dl.mixcloud.stream/x.m4a?sig=abc\n" };
         var direct = Make(r).ResolveDirectUrl(
-            "https://www.mixcloud.com/sub88/mental-place-26/", CancellationToken.None);
+            MixcloudUrl.Parse("https://www.mixcloud.com/sub88/mental-place-26/"), CancellationToken.None);
 
         Assert.Equal("https://dl.mixcloud.stream/x.m4a?sig=abc", direct);
         Assert.Contains("-f \"http/hls-192/bestaudio\"", r.LastArguments);
@@ -60,7 +60,8 @@ public class YtDlpServiceTests
     public void RozwiazywanieBierzePierwszyAdresGdyYtDlpZwrocaKilka()
     {
         var r = new FakeProcessRunner { NextStdOut = "https://a/1.m4a\nhttps://a/2.m4a\n" };
-        Assert.Equal("https://a/1.m4a", Make(r).ResolveDirectUrl("https://www.mixcloud.com/a/b/", CancellationToken.None));
+        Assert.Equal("https://a/1.m4a", Make(r).ResolveDirectUrl(
+            MixcloudUrl.Parse("https://www.mixcloud.com/a/b/"), CancellationToken.None));
     }
 
     [Fact]
@@ -96,5 +97,50 @@ public class YtDlpServiceTests
         var r = new FakeProcessRunner { NextStdOut = "{}" };
         Make(r).DumpListing(MixcloudUrl.Parse("https://www.mixcloud.com/a/favorites/"), 5, CancellationToken.None);
         Assert.True(r.LastTimeout > TimeSpan.Zero);
+    }
+
+    [Fact]
+    public void RozwiazywanieOdrzucaAdresInnyNizCloudcastPrzedUruchomieniemProcesu()
+    {
+        var r = new FakeProcessRunner();
+        Assert.Throws<ArgumentException>(() => Make(r).ResolveDirectUrl(
+            MixcloudUrl.Parse("https://www.mixcloud.com/spartacus/favorites/"), CancellationToken.None));
+        Assert.Null(r.LastArguments);
+    }
+
+    [Fact]
+    public void RozwiazywanieOdrzucaNiepoprawnyAdresPrzedUruchomieniemProcesu()
+    {
+        var r = new FakeProcessRunner();
+        Assert.Throws<ArgumentException>(() => Make(r).ResolveDirectUrl(
+            MixcloudUrl.Parse("https://youtube.com/x"), CancellationToken.None));
+        Assert.Null(r.LastArguments);
+    }
+
+    [Fact]
+    public void PusteWyjscieListyToPustaLista()
+    {
+        var r = new FakeProcessRunner { NextStdOut = "   \n  \n" };
+        var lines = Make(r).DumpListing(
+            MixcloudUrl.Parse("https://www.mixcloud.com/spartacus/favorites/"), 10, CancellationToken.None);
+        Assert.Empty(lines);
+    }
+
+    [Fact]
+    public void SamSzumBezJsonRzucaWyjatek()
+    {
+        var r = new FakeProcessRunner { NextStdOut = "WARNING: cos poszlo nie tak\nnot json at all\n", NextStdErr = "stderr tresc" };
+        var ex = Assert.Throws<YtDlpException>(() => Make(r).DumpListing(
+            MixcloudUrl.Parse("https://www.mixcloud.com/spartacus/favorites/"), 10, CancellationToken.None));
+        Assert.Equal("stderr tresc", ex.StdErr);
+    }
+
+    [Fact]
+    public void SzumPrzemieszanyZJsonemJestIgnorowany()
+    {
+        var r = new FakeProcessRunner { NextStdOut = "WARNING: cos\n{\"a\":1}\nnie json\n{\"a\":2}\n" };
+        var lines = Make(r).DumpListing(
+            MixcloudUrl.Parse("https://www.mixcloud.com/spartacus/favorites/"), 10, CancellationToken.None);
+        Assert.Equal(2, lines.Count);
     }
 }

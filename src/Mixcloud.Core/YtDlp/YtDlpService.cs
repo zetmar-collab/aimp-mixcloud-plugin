@@ -47,11 +47,20 @@ namespace Mixcloud.Core.YtDlp
                 limit, url.Normalized);
 
             var res = Execute(args, ListingTimeout, ct);
-            return res.StdOut
+
+            if (string.IsNullOrWhiteSpace(res.StdOut))
+                return new List<string>();
+
+            var jsonLines = res.StdOut
                 .Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(l => l.Trim())
                 .Where(l => l.StartsWith("{", StringComparison.Ordinal))
                 .ToList();
+
+            if (jsonLines.Count == 0)
+                throw new YtDlpException("yt-dlp: wyjscie nie zawiera poprawnego JSON (listing)", res.StdErr);
+
+            return jsonLines;
         }
 
         public string DumpCloudcast(MixcloudUrl url, CancellationToken ct)
@@ -61,11 +70,11 @@ namespace Mixcloud.Core.YtDlp
             return Execute(args, ListingTimeout, ct).StdOut;
         }
 
-        public string ResolveDirectUrl(string pageUrl, CancellationToken ct)
+        public string ResolveDirectUrl(MixcloudUrl url, CancellationToken ct)
         {
-            if (string.IsNullOrWhiteSpace(pageUrl)) throw new ArgumentException("Pusty adres", nameof(pageUrl));
+            Require(url, MixcloudUrlKind.Cloudcast);
 
-            var args = "-g -f \"" + FormatSelector + "\" --no-warnings \"" + pageUrl + "\"";
+            var args = "-g -f \"" + FormatSelector + "\" --no-warnings \"" + url.Normalized + "\"";
             var res = Execute(args, ResolveTimeout, ct);
 
             return res.StdOut
