@@ -66,6 +66,47 @@ musi zaczynać się od spike'a: minimalna wtyczka, która ładuje się w AIMP 5.
 x64 i dopisuje pozycję do menu. Dopóki to nie przejdzie, reszta specyfikacji
 jest bezprzedmiotowa.
 
+Ryzyko podmiany adresu strumienia zostało **zamknięte**: wrapper wystawia
+`IAimpExtensionPlayerHook` z metodą `bool OnCheckURL(ref string url)`, czyli
+dokładnie punkt zaczepienia, którego potrzebujemy.
+
+## Ustalenia z rozpoznania yt-dlp
+
+Zweryfikowane 2026-09-02 na yt-dlp 2026.06.09, na żywym Mixcloudzie. Odpowiedzi
+zapisano jako fixture'y w `tests/fixtures/`.
+
+**Odtwarzanie jest łatwiejsze, niż zakładaliśmy.** Obok strumieni HLS Mixcloud
+wystawia **progresywny plik m4a po HTTPS** (`format_id=http`). Selektor
+`-f "http/hls-192/bestaudio"` rozwiązuje adres w **2 sekundy**, a serwer
+odpowiada `206 Partial Content` z `audio/mp4` — strumień jest więc
+**przewijalny**, a AIMP odtworzy go natywnie przez zainstalowany `bass_aac`,
+bez udziału `bass_hls`. Adres zawiera parametr `?sig=`, czyli wygasa —
+odświeżanie pozostaje potrzebne.
+
+**`--dump-single-json` jest nie do użycia na listach.** Wymusza zmaterializowanie
+całej playlisty; na profilu z tysiącami pozycji yt-dlp stronicuje bez końca
+i `--playlist-end` tego nie zatrzymuje. Zaobserwowano zawieszenie na
+`/NTSRadio/uploads/`. Obowiązuje wariant leniwy, linia po linii:
+`--flat-playlist --dump-json -I 1:<limit>`.
+
+**`/favorites/` — nasz główny przypadek użycia — działa i jest leniwe.** Zero
+zapytań stronicujących, natychmiastowa odpowiedź, `-I` respektowane.
+
+**Pozycje w trybie flat nie mają tytułów.** Zawierają wyłącznie `id`
+(w formacie `<autor>_<slug>`), `url`, oraz — co cenne — `playlist_title`
+(np. „Spartacus (favorites)") i `playlist_count`. Wynikają z tego dwie decyzje:
+
+- **Nazwa playlisty bierze się z `playlist_title`**, prosto od yt-dlp. Nie
+  budujemy jej sami z handle'a.
+- **Tytuły pozycji uzupełnia AIMP leniwie**, przez
+  `IAimpExtensionFileInfoProvider`, który dla adresu Mixclouda dociąga
+  metadane. Do czasu uzupełnienia pokazujemy tytuł wyprowadzony ze slugu
+  w `id`. Rozwiązywanie metadanych wszystkich pozycji z góry byłoby
+  nieakceptowalnie wolne — 63 ulubione to 63 osobne wywołania yt-dlp.
+
+**Każde wywołanie listujące musi mieć twardy limit i timeout.** Część typów
+list potrafi się zapętlić; wtyczka nie może na tym zawisnąć.
+
 ## Architektura
 
 Sześć modułów. Cztery pierwsze nie mają żadnej zależności od AIMP, dzięki czemu
@@ -81,7 +122,7 @@ warstwa weryfikowana wyłącznie ręcznie.
 | `MediaSource` | dostarczenie AIMP grywalnego adresu: rozwiązanie strumienia i odświeżenie wygasłego, albo — w trybie fallback — pobranie pliku do katalogu tymczasowego i zarządzanie nim | nie |
 | `MixcloudSettings` | handle użytkownika, ścieżki, flagi, serializacja | nie |
 | `Localization` | odczyt napisów z plików `.lng` przez usługę MUI AIMP | tylko usługa MUI |
-| `MixcloudPlugin` | cykl życia wtyczki, menu, strona ustawień, budowa playlisty | tak |
+| `MixcloudPlugin` | cykl życia wtyczki, menu, strona ustawień, budowa playlisty, rejestracja rozszerzeń `IAimpExtensionPlayerHook` i `IAimpExtensionFileInfoProvider` | tak |
 
 `MixcloudTrack` to rekord: adres strony Mixclouda, tytuł, wykonawca, czas
 trwania, adres okładki.
@@ -98,12 +139,14 @@ jednostkowe możliwymi; nie wolno go zacierać dla wygody.
 1. Użytkownik wybiera z menu AIMP pozycję otwarcia adresu Mixclouda.
 2. Dialog przyjmuje adres. Walidacja odrzuca wszystko spoza domeny
    `mixcloud.com` z czytelnym komunikatem.
-3. `YtDlpService` woła yt-dlp z `--flat-playlist --dump-single-json`
-   **w wątku roboczym**, z paskiem postępu i możliwością anulowania.
+3. `YtDlpService` woła yt-dlp **w wątku roboczym**, z paskiem postępu
+   i możliwością anulowania:
+   - lista → `--flat-playlist --dump-json -I 1:<limit>`, czytane linia po linii;
+   - pojedynczy miks → `--dump-single-json`.
 4. `MixcloudCatalog` parsuje wynik na listę `MixcloudTrack`.
-5. Powstaje **nowa playlista**, nazwana tytułem miksu albo handle'em
-   wykonawcy — nigdy nie dopisujemy do playlisty, której użytkownik właśnie
-   słucha.
+5. Powstaje **nowa playlista**, nazwana wartością `playlist_title` z odpowiedzi
+   yt-dlp (dla pojedynczego miksu — jego tytułem) — nigdy nie dopisujemy do
+   playlisty, której użytkownik właśnie słucha.
 
 Pojedynczy miks daje playlistę z jedną pozycją. Adres profilu albo
 `/favorites/` rozwija się w pełną listę. Oba przypadki przechodzą tą samą
@@ -112,19 +155,18 @@ Pojedynczy miks daje playlistę z jedną pozycją. Adres profilu albo
 ## Przepływ: odtwarzanie
 
 Pozycje w playliście przechowują **adres strony Mixclouda**, nie adres
-strumienia. Dopiero gdy AIMP przystępuje do odtwarzania, `MediaSource` woła
-`yt-dlp -g` i podstawia świeży adres HLS, który obsługuje zainstalowany
-`bass_hls`.
+strumienia. Dopiero gdy AIMP przystępuje do odtwarzania, wtyczka przechwytuje
+to przez `IAimpExtensionPlayerHook.OnCheckURL(ref string url)`, a `MediaSource`
+woła `yt-dlp -g -f "http/hls-192/bestaudio"` i podstawia świeży adres
+progresywnego m4a — przewijalny i obsługiwany natywnie przez `bass_aac`.
 
-Podejście to zakłada, że wrapper aimp_dotnet wystawia hook pozwalający podmienić
-adres w momencie otwierania pozycji. **Założenie jest niezweryfikowane** i
-spike musi je rozstrzygnąć.
+Istnienie hooka jest **potwierdzone** w API wrappera. Spike ma jeszcze
+potwierdzić, że AIMP faktycznie go wywołuje i honoruje podmieniony adres.
 
 ### Fallback: pobieranie do katalogu tymczasowego
 
-Jeśli strumieniowanie okaże się niewykonalne — brak hooka podmiany adresu albo
-`bass_hls` nie radzi sobie ze strumieniem Mixclouda — wtyczka przełącza się na
-pobieranie pliku i odtwarzanie lokalnie.
+Jeśli spike wykaże, że AIMP nie honoruje podmienionego adresu, wtyczka
+przełącza się na pobieranie pliku i odtwarzanie lokalnie.
 
 - Katalog: `%TEMP%\AIMP-Mixcloud\`, plik nazwany skrótem adresu strony, żeby
   ponowne odtworzenie tego samego miksu trafiło w gotowy plik zamiast pobierać
@@ -161,10 +203,10 @@ i Mixcloud Select.
 
 ## Zarządzanie yt-dlp
 
-Wtyczka trzyma **własną kopię** `yt-dlp.exe` w katalogu profilu użytkownika
-(`%APPDATA%\AIMP\Plugins\Mixcloud\`), niezależną od tego, co jest w systemowym
-PATH. Katalog wtyczki w `Program Files` odpada — wymagałby uprawnień
-administratora przy każdej aktualizacji.
+Wtyczka trzyma **własną kopię** `yt-dlp.exe` w podkatalogu `Mixcloud\` profilu
+AIMP, którego ścieżkę daje `Core.GetPath(AimpCorePathType.Profile)` — nie
+zgadujemy `%APPDATA%`. Katalog wtyczki w `Program Files` odpada: wymagałby
+uprawnień administratora przy każdej aktualizacji.
 
 - Pierwszy start: pobranie najnowszego wydania z GitHub Releases.
 - Sprawdzanie aktualizacji: raz na dobę, porównanie tagu `releases/latest`

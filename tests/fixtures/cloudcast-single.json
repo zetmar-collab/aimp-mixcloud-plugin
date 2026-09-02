@@ -1,0 +1,66 @@
+{
+  "id": "NTSRadio_loraine-james-1st-september-2026",
+  "title": "Loraine James - 1st September 2026",
+  "uploader": "Mixcloud NTS Radio",
+  "uploader_id": "NTSRadio",
+  "duration": 3949,
+  "thumbnail": "https://thumbnailer.mixcloud.com/unsafe/1024x1024/extaudio/8/b/c/4/f3e9-deed-43af-8f1b-fda65101ac55",
+  "webpage_url": "https://www.mixcloud.com/NTSRadio/loraine-james-1st-september-2026/",
+  "extractor": "mixcloud",
+  "_type": "video",
+  "description": "North London native and Hyperdub signee Loraine James is an electronic producer who effortlessly blends Electronica and IDM with whispers of jazz and ambience all wrapped up in the artists key avant-garde aesthetic and sensibility.  \nFind the full tracklist and related episodes on NTS: https://www.nts.live/shows/loraine-james/episodes/loraine-james-1st-september-2026",
+  "timestamp": 1788347521,
+  "like_count": 0,
+  "formats": [
+    {
+      "format_id": "http",
+      "protocol": "https",
+      "ext": "m4a",
+      "abr": null,
+      "acodec": null,
+      "url": "https://dl.mixcloud.stream/secure/c/m4a/64/9/1/9/5/af67-f220-4cb9-a926-e94fb3d92c49.m4a?sig=j5tbDYvkK7w0Y4zoWhTZhg",
+      "filesize": null,
+      "filesize_approx": null
+    },
+    {
+      "format_id": "hls-64",
+      "protocol": "m3u8_native",
+      "ext": "mp4",
+      "abr": 64.003,
+      "acodec": "mp4a.40.2",
+      "url": "https://aod.mixcloud.stream/secure/hls/9/1/9/5/af67-f220-4cb9-a926-e94fb3d92c49.m4a/streamindex-a1.m3u8",
+      "filesize": null,
+      "filesize_approx": null
+    },
+    {
+      "format_id": "hls-192",
+      "protocol": "m3u8_native",
+      "ext": "mp4",
+      "abr": 192.001,
+      "acodec": "mp4a.40.2",
+      "url": "https://aod.mixcloud.stream/secure/hls/9/1/9/5/af67-f220-4cb9-a926-e94fb3d92c49-192K.m4a/streamindex-a1.m3u8",
+      "filesize": null,
+      "filesize_approx": null
+    },
+    {
+      "format_id": "dash-f1-a1-x3",
+      "protocol": "http_dash_segments",
+      "ext": "webm",
+      "abr": 68.94,
+      "acodec": "opus",
+      "url": "https://aod.mixcloud.stream/secure/dash_multi/,9/1/9/5/af67-f220-4cb9-a926-e94fb3d92c49-64K,9/1/9/5/af67-f220-4cb9-a926-e94fb3d92c49-192K,.m4a.urlset/manifest.mpd",
+      "filesize": null,
+      "filesize_approx": null
+    },
+    {
+      "format_id": "dash-f2-a1-x3",
+      "protocol": "http_dash_segments",
+      "ext": "webm",
+      "abr": 210.946,
+      "acodec": "opus",
+      "url": "https://aod.mixcloud.stream/secure/dash_multi/,9/1/9/5/af67-f220-4cb9-a926-e94fb3d92c49-64K,9/1/9/5/af67-f220-4cb9-a926-e94fb3d92c49-192K,.m4a.urlset/manifest.mpd",
+      "filesize": null,
+      "filesize_approx": null
+    }
+  ]
+}
