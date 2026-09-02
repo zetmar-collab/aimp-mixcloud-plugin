@@ -22,32 +22,40 @@ namespace Mixcloud.Plugin.Extensions
 
         public bool OnCheckURL(ref string url)
         {
-            Log("OnCheckURL: " + url);
-
-            if (url == null || url.IndexOf("mixcloud.com", StringComparison.OrdinalIgnoreCase) < 0)
-                return false;
-
-            string ytDlpPath;
-            if (!TryFindYtDlp(out ytDlpPath))
+            try
             {
-                Log("  yt-dlp.exe not found on PATH; cannot resolve.");
+                Log("OnCheckURL: " + url);
+
+                if (url == null || url.IndexOf("mixcloud.com", StringComparison.OrdinalIgnoreCase) < 0)
+                    return false;
+
+                string ytDlpPath;
+                if (!TryFindYtDlp(out ytDlpPath))
+                {
+                    Log("  yt-dlp.exe not found on PATH; cannot resolve.");
+                    return false;
+                }
+
+                string resolved;
+                string error;
+                if (!TryResolveWithYtDlp(ytDlpPath, url, out resolved, out error))
+                {
+                    Log("  yt-dlp resolution FAILED for: " + url);
+                    if (!string.IsNullOrEmpty(error))
+                        Log("  yt-dlp stderr: " + error);
+                    return false;
+                }
+
+                Log("  page: " + url);
+                Log("  -> resolved: " + resolved);
+                url = resolved;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log("UNEXPECTED EXCEPTION in OnCheckURL: " + ex.GetType().Name + " - " + ex.Message);
                 return false;
             }
-
-            string resolved;
-            string error;
-            if (!TryResolveWithYtDlp(ytDlpPath, url, out resolved, out error))
-            {
-                Log("  yt-dlp resolution FAILED for: " + url);
-                if (!string.IsNullOrEmpty(error))
-                    Log("  yt-dlp stderr: " + error);
-                return false;
-            }
-
-            Log("  page: " + url);
-            Log("  -> resolved: " + resolved);
-            url = resolved;
-            return true;
         }
 
         private static bool TryFindYtDlp(out string path)
