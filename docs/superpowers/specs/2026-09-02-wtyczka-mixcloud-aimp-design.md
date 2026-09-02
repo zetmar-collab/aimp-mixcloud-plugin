@@ -160,8 +160,16 @@ to przez `IAimpExtensionPlayerHook.OnCheckURL(ref string url)`, a `MediaSource`
 woła `yt-dlp -g -f "http/hls-192/bestaudio"` i podstawia świeży adres
 progresywnego m4a — przewijalny i obsługiwany natywnie przez `bass_aac`.
 
-Istnienie hooka jest **potwierdzone** w API wrappera. Spike ma jeszcze
-potwierdzić, że AIMP faktycznie go wywołuje i honoruje podmieniony adres.
+**ROZSTRZYGNIETE 2026-09-02: tryb strumieniowy dziala.** Spike wykonany na
+zywym AIMP 5.4 wykazal, ze odtwarzacz wola `OnCheckURL` dla adresow Mixclouda
+i honoruje podmieniony adres. Dowod: po odtworzeniu AIMP zapisal w playliste
+metadane strumienia — 2 kanaly, 44100 Hz, 3 949 875 ms, kodek MP4 — ktore moze
+znac wylacznie po faktycznym otwarciu i zdekodowaniu podstawionego adresu.
+Czas trwania zgadza sie z tym, co raportuje yt-dlp.
+
+W konsekwencji **zadanie 13 planu (fallback z pobieraniem do katalogu
+tymczasowego) nie bedzie realizowane**. Sekcja ponizej pozostaje w dokumencie
+jako zapis rozwazanego wariantu, nie jako zakres prac.
 
 ### Fallback: pobieranie do katalogu tymczasowego
 
