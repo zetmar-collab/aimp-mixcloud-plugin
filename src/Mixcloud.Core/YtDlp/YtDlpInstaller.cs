@@ -56,8 +56,13 @@ namespace Mixcloud.Core.YtDlp
             _dataDir = dataDir ?? throw new ArgumentNullException(nameof(dataDir));
         }
 
+        // Minimalny rozmiar pliku, ponizej ktorego nie traktujemy go jako
+        // wiarygodnej binarki yt-dlp.exe (chroni przed obcietym/pustym pobraniem).
+        private const long MinPlausibleExeBytes = 1024;
+
         public string ExePath => Path.Combine(_dataDir, "yt-dlp.exe");
         private string PendingPath => ExePath + ".new";
+        private string BackupPath => ExePath + ".bak";
 
         public string EnsureInstalled(CancellationToken ct)
         {
@@ -70,10 +75,36 @@ namespace Mixcloud.Core.YtDlp
         public void ApplyPendingUpdate()
         {
             if (!File.Exists(PendingPath)) return;
+
+            if (!IsPlausibleExecutable(PendingPath))
+            {
+                // Obcieta/pusta binarka - nie wolno jej nigdy podmienic na dzialajaca wersje.
+                TryDelete(PendingPath);
+                return;
+            }
+
             try
             {
-                if (File.Exists(ExePath)) File.Delete(ExePath);
-                File.Move(PendingPath, ExePath);
+                TryDelete(BackupPath);
+
+                bool hadExisting = File.Exists(ExePath);
+                if (hadExisting)
+                    File.Move(ExePath, BackupPath);
+
+                try
+                {
+                    File.Move(PendingPath, ExePath);
+                }
+                catch
+                {
+                    // Podmiana sie nie powiodla - przywroc poprzednia dzialajaca binarke,
+                    // zeby plugin nigdy nie zostal bez zadnej wersji yt-dlp.
+                    if (hadExisting && !File.Exists(ExePath) && File.Exists(BackupPath))
+                        File.Move(BackupPath, ExePath);
+                    throw;
+                }
+
+                if (hadExisting) TryDelete(BackupPath);
             }
             catch (IOException)
             {
@@ -92,8 +123,19 @@ namespace Mixcloud.Core.YtDlp
                 if (string.Equals(tag, settings.LastKnownYtDlpTag, StringComparison.Ordinal)) return false;
 
                 Directory.CreateDirectory(_dataDir);
-                // Pobieramy obok. Podmiana nastapi dopiero przy nastepnym starcie.
-                _http.DownloadFile(LatestExeUrl, PendingPath, ct);
+                try
+                {
+                    // Pobieramy obok. Podmiana nastapi dopiero przy nastepnym starcie.
+                    _http.DownloadFile(LatestExeUrl, PendingPath, ct);
+                }
+                catch
+                {
+                    // Przerwane/nieudane pobranie moglo zostawic obciety plik - usun go,
+                    // zeby ApplyPendingUpdate nigdy go nie zobaczyl.
+                    TryDelete(PendingPath);
+                    throw;
+                }
+
                 settings.LastKnownYtDlpTag = tag;
                 return true;
             }
@@ -101,6 +143,31 @@ namespace Mixcloud.Core.YtDlp
             {
                 // Brak sieci to cichy no-op: gramy dalej na dotychczasowej wersji.
                 return false;
+            }
+        }
+
+        private static bool IsPlausibleExecutable(string path)
+        {
+            try
+            {
+                var info = new FileInfo(path);
+                return info.Exists && info.Length >= MinPlausibleExeBytes;
+            }
+            catch (IOException)
+            {
+                return false;
+            }
+        }
+
+        private static void TryDelete(string path)
+        {
+            try
+            {
+                if (File.Exists(path)) File.Delete(path);
+            }
+            catch (IOException)
+            {
+                // Najlepszy wysilek - jesli plik jest zablokowany, zostanie posprzatany pozniej.
             }
         }
     }
