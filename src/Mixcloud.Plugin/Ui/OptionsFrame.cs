@@ -65,7 +65,7 @@ namespace Mixcloud.Plugin.Ui
 
                 var loadFavoritesNow = new Button { Text = s.Get(StringKeys.OptLoadFavoritesNow) };
                 loadFavoritesNow.SetBounds(12, 45, 220, 26);
-                loadFavoritesNow.Click += (o, e) => SafeLoadFavorites();
+                loadFavoritesNow.Click += (o, e) => SafeLoadFavoritesNow();
                 _panel.Controls.Add(loadFavoritesNow);
 
                 _panel.Controls.Add(Label(s.Get(StringKeys.OptListingLimit), 12, 87));
@@ -141,10 +141,13 @@ namespace Mixcloud.Plugin.Ui
         {
             try
             {
+                MixcloudPlugin.LogStartup("OptionsFrame.Notification: type=" + type);
+
                 if (_panel == null) return;
 
                 if (type == OptionsDialogFrameNotificationType.Save)
                 {
+                    MixcloudPlugin.LogStartup("OptionsFrame.Notification(Save): Handle='" + _handle.Text.Trim() + "'");
                     _ctx.Settings.Handle = _handle.Text.Trim();
                     _ctx.Settings.ListingLimit = (int)_limit.Value;
                     _ctx.Settings.CacheLimitBytes = (long)_cacheGb.Value * 1024 * 1024 * 1024;
@@ -171,15 +174,30 @@ namespace Mixcloud.Plugin.Ui
             }
         }
 
-        private void SafeLoadFavorites()
+        // Przycisk musi dzialac niezaleznie od natywnego OK/Zastosuj AIMP -
+        // czyta uchwyt bezposrednio z pola tekstowego i zapisuje go od razu,
+        // zamiast polegac na tym, ze Notification(Save) zdazyl juz odpalic.
+        private void SafeLoadFavoritesNow()
         {
             try
             {
+                var handle = _handle.Text.Trim();
+                if (string.IsNullOrWhiteSpace(handle))
+                {
+                    MessageBox.Show(_ctx.Strings.Get(StringKeys.MsgNoHandle),
+                        _ctx.Strings.Get(StringKeys.MsgError),
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                _ctx.Settings.Handle = handle;
+                _ctx.SaveSettings();
+
                 if (_loadFavorites != null) _loadFavorites();
             }
             catch (Exception ex)
             {
-                MixcloudPlugin.LogStartup("OptionsFrame.SafeLoadFavorites WYJATEK: " + ex);
+                MixcloudPlugin.LogStartup("OptionsFrame.SafeLoadFavoritesNow WYJATEK: " + ex);
             }
         }
 
