@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using AIMP.SDK;
 using AIMP.SDK.FileManager.Objects;
@@ -11,6 +12,13 @@ namespace Mixcloud.Plugin.Playlists
 {
     public sealed class PlaylistBuilder
     {
+        // AddList(IList<IAimpFileInfo>,...) z flaga FileInfo wola wewnetrznie
+        // AimpFileInfo.set_AlbumArt dla kazdej pozycji i nie sprawdza null -
+        // AimpConverter.ToAimpImage rzuca NullReferenceException, gdy AlbumArt
+        // jest nieustawiony (potwierdzone w dzienniku wtyczki). Jedna wspoldzielona
+        // 1x1 bitmapa omija ten blad biblioteki bez alokowania osobnej na kazdy utwor.
+        private static readonly Bitmap PlaceholderAlbumArt = new Bitmap(1, 1);
+
         private readonly PluginContext _ctx;
 
         public PlaylistBuilder(PluginContext ctx)
@@ -62,6 +70,7 @@ namespace Mixcloud.Plugin.Playlists
                     info.Artist = t.Artist;
                     info.Album = "Mixcloud";
                     info.Duration = t.DurationSeconds;
+                    info.AlbumArt = PlaceholderAlbumArt;
                     items.Add(info);
                 }
 
