@@ -50,6 +50,41 @@ Wymagania przy uruchamianiu skryptu:
 > pełny restart programu wczytuje nowe pliki. Ten jeden fakt kosztował
 > realny czas debugowania przy pracy nad tym projektem.
 
+## Instalacja gotowej wtyczki (bez budowania)
+
+Gotowe paczki są dołączone do każdego
+[release'a na GitHubie](https://github.com/zetmar-collab/aimp-mixcloud-plugin/releases).
+Dostępne są dwa formaty — wybierz jeden:
+
+**`aimp_mixcloud.aimppack`** — przez wbudowany instalator AIMP:
+Ustawienia AIMP → Wtyczki → przycisk **„Instaluj"** (lewy dolny róg) → wskaż
+pobrany plik. AIMP sam podmienia stare pliki (zachowuje kopię `.old`) i w
+naszych testach zadziałało to nawet **bez restartu** AIMP.
+
+**`AIMP-Mixcloud-vX.Y.Z.zip`** — ręcznie: rozpakuj katalog `Mixcloud` do
+`C:\Program Files\AIMP\Plugins\` (wymaga uprawnień administratora, AIMP musi
+być zamknięty), potem uruchom AIMP ponownie. Pełna instrukcja jest w pliku
+`INSTALACJA.txt` wewnątrz archiwum.
+
+Format `.aimppack` to zwykły plik ZIP, ale AIMP odrzuca go, jeśli:
+- nie ma rozszerzenia `.aimppack` (sam ZIP z innym rozszerzeniem daje błąd
+  „Package is malformed"),
+- pliki binarne nie leżą w podkatalogu `x64\` wewnątrz folderu wtyczki (bez
+  tego AIMP zgłasza „The package has no 64-bit binaries") — ustalone przez
+  rozpakowanie oficjalnej wtyczki AIMP i porównanie struktury.
+
+Obie paczki buduje `tools/package-release.ps1`:
+
+```powershell
+dotnet build Mixcloud.sln -c Release
+tools/package-release.ps1 -Version "1.0.1"
+```
+
+Skrypt kopiuje pliki `*.dll` przez wzorzec (tak samo jak `tools/deploy.ps1`),
+żeby żaden plik nigdy nie został pominięty przy ręcznym wypisywaniu nazw —
+dokładnie taki błąd (brakujący `Mixcloud.Core.dll`) zepsuł pierwszą wersję
+paczki wydaną ręcznie poza tym skryptem.
+
 ## Testy
 
 Testy jednostkowe działają na nagranych fixture'ach (`tests/fixtures/`) i nie
