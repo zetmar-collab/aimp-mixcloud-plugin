@@ -27,5 +27,7 @@ namespace Mixcloud.Core.Localization
         public const string OptCheckNow         = @"Mixcloud.Options\CheckNow";
         public const string OptYtDlpVersion     = @"Mixcloud.Options\YtDlpVersion";
         public const string OptCacheLimit       = @"Mixcloud.Options\CacheLimit";
+        public const string OptLoadFavoritesNow = @"Mixcloud.Options\LoadFavoritesNow";
+        public const string OptLanguageNote     = @"Mixcloud.Options\LanguageNote";
     }
 }

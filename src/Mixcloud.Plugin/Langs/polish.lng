@@ -1,4 +1,4 @@
-[FILE]
+﻿[FILE]
 Author=Marek Zettel
 Name=Polish (PL)
 VersionID=0
@@ -33,3 +33,5 @@ AutoUpdate=Aktualizuj yt-dlp automatycznie
 CheckNow=Sprawdź aktualizacje teraz
 YtDlpVersion=Wersja yt-dlp
 CacheLimit=Limit plików tymczasowych (GB)
+LoadFavoritesNow=Wczytaj ulubione teraz
+LanguageNote=Język interfejsu wtyczki podąża za ustawieniem języka samego AIMP (Ustawienia → Język).

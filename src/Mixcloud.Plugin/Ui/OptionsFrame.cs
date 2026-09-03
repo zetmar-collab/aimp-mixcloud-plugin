@@ -15,6 +15,7 @@ namespace Mixcloud.Plugin.Ui
     {
         private readonly PluginContext _ctx;
         private readonly YtDlpInstaller _installer;
+        private readonly Action _loadFavorites;
 
         private Panel _panel;
         private TextBox _handle;
@@ -23,10 +24,11 @@ namespace Mixcloud.Plugin.Ui
         private CheckBox _autoUpdate;
         private Label _version;
 
-        public OptionsFrame(PluginContext ctx, YtDlpInstaller installer)
+        public OptionsFrame(PluginContext ctx, YtDlpInstaller installer, Action loadFavorites)
         {
             _ctx = ctx;
             _installer = installer;
+            _loadFavorites = loadFavorites;
         }
 
         public string GetName()
@@ -54,26 +56,31 @@ namespace Mixcloud.Plugin.Ui
                 }
 
                 var s = _ctx.Strings;
-                _panel = new Panel { Location = new Point(0, 0), Size = new Size(560, 260) };
+                _panel = new Panel { Location = new Point(0, 0), Size = new Size(560, 340) };
 
                 _panel.Controls.Add(Label(s.Get(StringKeys.OptHandle), 12, 15));
                 _handle = new TextBox { Text = _ctx.Settings.Handle };
                 _handle.SetBounds(240, 12, 300, 24);
                 _panel.Controls.Add(_handle);
 
-                _panel.Controls.Add(Label(s.Get(StringKeys.OptListingLimit), 12, 51));
+                var loadFavoritesNow = new Button { Text = s.Get(StringKeys.OptLoadFavoritesNow) };
+                loadFavoritesNow.SetBounds(12, 45, 220, 26);
+                loadFavoritesNow.Click += (o, e) => SafeLoadFavorites();
+                _panel.Controls.Add(loadFavoritesNow);
+
+                _panel.Controls.Add(Label(s.Get(StringKeys.OptListingLimit), 12, 87));
                 _limit = new NumericUpDown { Minimum = 1, Maximum = 10000, Value = _ctx.Settings.ListingLimit };
-                _limit.SetBounds(240, 48, 100, 24);
+                _limit.SetBounds(240, 84, 100, 24);
                 _panel.Controls.Add(_limit);
 
-                _panel.Controls.Add(Label(s.Get(StringKeys.OptCacheLimit), 12, 87));
+                _panel.Controls.Add(Label(s.Get(StringKeys.OptCacheLimit), 12, 123));
                 _cacheGb = new NumericUpDown
                 {
                     Minimum = 1,
                     Maximum = 200,
                     Value = Math.Max(1, _ctx.Settings.CacheLimitBytes / (1024L * 1024 * 1024))
                 };
-                _cacheGb.SetBounds(240, 84, 100, 24);
+                _cacheGb.SetBounds(240, 120, 100, 24);
                 _panel.Controls.Add(_cacheGb);
 
                 _autoUpdate = new CheckBox
@@ -82,17 +89,26 @@ namespace Mixcloud.Plugin.Ui
                     Checked = _ctx.Settings.AutoUpdateYtDlp,
                     AutoSize = true
                 };
-                _autoUpdate.Location = new Point(12, 122);
+                _autoUpdate.Location = new Point(12, 158);
                 _panel.Controls.Add(_autoUpdate);
 
-                _panel.Controls.Add(Label(s.Get(StringKeys.OptYtDlpVersion), 12, 159));
-                _version = Label("...", 240, 159);
+                _panel.Controls.Add(Label(s.Get(StringKeys.OptYtDlpVersion), 12, 195));
+                _version = Label("...", 240, 195);
                 _panel.Controls.Add(_version);
 
                 var check = new Button { Text = s.Get(StringKeys.OptCheckNow) };
-                check.SetBounds(12, 190, 220, 28);
+                check.SetBounds(12, 226, 220, 28);
                 check.Click += (o, e) => SafeCheckNow();
                 _panel.Controls.Add(check);
+
+                var languageNote = new Label
+                {
+                    Text = s.Get(StringKeys.OptLanguageNote),
+                    AutoSize = false,
+                    Size = new Size(520, 40)
+                };
+                languageNote.Location = new Point(12, 266);
+                _panel.Controls.Add(languageNote);
 
                 RefreshVersion();
 
@@ -152,6 +168,18 @@ namespace Mixcloud.Plugin.Ui
             catch (Exception ex)
             {
                 MixcloudPlugin.LogStartup("OptionsFrame.Notification WYJATEK: " + ex);
+            }
+        }
+
+        private void SafeLoadFavorites()
+        {
+            try
+            {
+                if (_loadFavorites != null) _loadFavorites();
+            }
+            catch (Exception ex)
+            {
+                MixcloudPlugin.LogStartup("OptionsFrame.SafeLoadFavorites WYJATEK: " + ex);
             }
         }
 

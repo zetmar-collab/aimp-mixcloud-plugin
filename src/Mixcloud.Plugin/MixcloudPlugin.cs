@@ -110,7 +110,7 @@ namespace Mixcloud.Plugin
                     LogStartup("  RegisterExtension(FileInfoProvider) -> NIEPOWODZENIE: " + registeredFileInfo.ResultType);
                 }
 
-                var options = new Ui.OptionsFrame(_ctx, _installer);
+                var options = new Ui.OptionsFrame(_ctx, _installer, OnLoadFavorites);
                 var registeredOptions = Player.Core.RegisterExtension(options);
                 if (registeredOptions.ResultType == ActionResultType.OK)
                 {
