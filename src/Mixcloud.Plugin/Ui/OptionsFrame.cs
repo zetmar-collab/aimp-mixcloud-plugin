@@ -46,6 +46,13 @@ namespace Mixcloud.Plugin.Ui
         {
             try
             {
+                // Dispose any existing panel before creating a new one to avoid handle leaks.
+                if (_panel != null)
+                {
+                    _panel.Dispose();
+                    _panel = null;
+                }
+
                 var s = _ctx.Strings;
                 _panel = new Panel { Location = new Point(0, 0), Size = new Size(560, 260) };
 
@@ -132,6 +139,9 @@ namespace Mixcloud.Plugin.Ui
                 {
                     _handle.Text = _ctx.Settings.Handle;
                     _limit.Value = _ctx.Settings.ListingLimit;
+                    var cacheLimitGb = Math.Max(1, _ctx.Settings.CacheLimitBytes / (1024L * 1024 * 1024));
+                    cacheLimitGb = Math.Min(200, cacheLimitGb);
+                    _cacheGb.Value = cacheLimitGb;
                     _autoUpdate.Checked = _ctx.Settings.AutoUpdateYtDlp;
                     RefreshVersion();
                 }
