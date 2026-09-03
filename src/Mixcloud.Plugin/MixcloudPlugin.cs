@@ -310,6 +310,10 @@ namespace Mixcloud.Plugin
 
                     if (listing.Tracks.Count == 0)
                     {
+                        // Jedyna galaz LoadAsync bez logu - bez tego zdalna
+                        // diagnoza "nic nie znaleziono" wymaga recznego
+                        // odpytania yt-dlp/strony zamiast zerknac w dziennik.
+                        LogStartup("LoadAsync: pusty wynik dla " + url.Normalized);
                         OnMainThread(() => ShowError(StringKeys.MsgEmptyResult));
                         return;
                     }
