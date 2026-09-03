@@ -1,0 +1,33 @@
+[FILE]
+Author=Marek Zettel
+Name=English (EN)
+VersionID=0
+LangId=1033
+
+[Mixcloud.Menu]
+OpenUrl=Mixcloud URL...
+LoadFavorites=Mixcloud: load my favorites
+
+[Mixcloud.OpenUrl]
+Title=Open Mixcloud URL
+Prompt=Paste a Mixcloud address (a mix, a profile or /favorites/):
+Ok=Open
+Cancel=Cancel
+
+[Mixcloud.Messages]
+Error=Error
+InvalidUrl=This is not a Mixcloud address.
+NoHandle=Set your Mixcloud username in the plugin options first.
+EmptyResult=Nothing was found at this address. The profile may be private or empty.
+YtDlpMissing=yt-dlp is missing. Download it now?
+YtDlpFailed=yt-dlp could not read this address.
+Loading=Loading from Mixcloud...
+NoDiskSpace=Not enough free disk space to download this mix.
+
+[Mixcloud.Options]
+Handle=Mixcloud username
+ListingLimit=Maximum items per listing
+AutoUpdate=Update yt-dlp automatically
+CheckNow=Check for updates now
+YtDlpVersion=yt-dlp version
+CacheLimit=Temporary files limit (GB)

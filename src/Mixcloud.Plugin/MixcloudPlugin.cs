@@ -3,6 +3,8 @@ using System.IO;
 using AIMP.SDK;
 using AIMP.SDK.MenuManager;
 using AIMP.SDK.MenuManager.Objects;
+using Mixcloud.Core.Localization;
+using Mixcloud.Plugin.Localization;
 
 namespace Mixcloud.Plugin
 {
@@ -13,6 +15,7 @@ namespace Mixcloud.Plugin
     {
         private IAimpMenuItem _probeItem;
         private Extensions.MixcloudPlayerHook _hook;
+        private IStringProvider _strings;
 
         // Wyjatek rzucony z Initialize sprawia, ze AIMP po cichu porzuca wtyczke
         // i nie pokazuje zadnego bledu. Bez tego dziennika kazda awaria startu
@@ -40,13 +43,15 @@ namespace Mixcloud.Plugin
             {
                 LogStartup("  Player = " + (Player == null ? "NULL" : Player.GetType().FullName));
 
+                _strings = new MuiStringProvider(Player.ServiceMui);
+
                 var created = Player.Core.CreateAimpObject<IAimpMenuItem>();
                 LogStartup("  CreateAimpObject<IAimpMenuItem> -> " + created.ResultType);
                 if (created.ResultType != ActionResultType.OK) return;
 
                 _probeItem = created.Result;
                 _probeItem.Id = "Mixcloud.Probe";
-                _probeItem.Name = "Mixcloud: dziala";
+                _probeItem.Name = _strings.Get(StringKeys.MenuLoadFavorites);
                 _probeItem.Style = MenuItemStyle.Normal;
 
                 var added = Player.ServiceMenuManager.Add(ParentMenuType.PlayerMainOpen, _probeItem);

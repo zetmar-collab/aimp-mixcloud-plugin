@@ -1,0 +1,33 @@
+[FILE]
+Author=Marek Zettel
+Name=Polish (PL)
+VersionID=0
+LangId=1045
+
+[Mixcloud.Menu]
+OpenUrl=Adres Mixcloud...
+LoadFavorites=Mixcloud: wczytaj moje ulubione
+
+[Mixcloud.OpenUrl]
+Title=Otwórz adres Mixcloud
+Prompt=Wklej adres Mixclouda (miks, profil albo /favorites/):
+Ok=Otwórz
+Cancel=Anuluj
+
+[Mixcloud.Messages]
+Error=Błąd
+InvalidUrl=To nie jest adres Mixclouda.
+NoHandle=Najpierw podaj swoją nazwę użytkownika Mixcloud w ustawieniach wtyczki.
+EmptyResult=Pod tym adresem nic nie znaleziono. Profil może być prywatny lub pusty.
+YtDlpMissing=Brakuje yt-dlp. Pobrać teraz?
+YtDlpFailed=yt-dlp nie zdołał odczytać tego adresu.
+Loading=Wczytywanie z Mixclouda...
+NoDiskSpace=Za mało wolnego miejsca na dysku, żeby pobrać ten miks.
+
+[Mixcloud.Options]
+Handle=Nazwa użytkownika Mixcloud
+ListingLimit=Maksymalna liczba pozycji na liście
+AutoUpdate=Aktualizuj yt-dlp automatycznie
+CheckNow=Sprawdź aktualizacje teraz
+YtDlpVersion=Wersja yt-dlp
+CacheLimit=Limit plików tymczasowych (GB)
