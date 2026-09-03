@@ -9,6 +9,7 @@ using AIMP.SDK.MenuManager;
 using AIMP.SDK.MenuManager.Objects;
 using Mixcloud.Core.Catalog;
 using Mixcloud.Core.Localization;
+using Mixcloud.Core.Media;
 using Mixcloud.Core.Process;
 using Mixcloud.Core.Settings;
 using Mixcloud.Core.Urls;
@@ -28,6 +29,7 @@ namespace Mixcloud.Plugin
         private YtDlpInstaller _installer;
         private IAimpMenuItem _openUrlItem;
         private IAimpMenuItem _favoritesItem;
+        private IMediaSource _mediaSource;
         private Extensions.MixcloudPlayerHook _hook;
 
         // IAimpServiceActionManager nie ma metody wyrejestrowania w tym SDK,
@@ -78,10 +80,11 @@ namespace Mixcloud.Plugin
                 _favoritesItem = AddMenuItem("Mixcloud.Favorites", StringKeys.MenuLoadFavorites, OnLoadFavorites);
                 LogStartup("  AddMenuItem(Favorites) -> " + (_favoritesItem == null ? "NULL" : "OK"));
 
-                // SPIKE (Zadanie 2): rozstrzygniecie, czy AIMP honoruje adres
-                // podmieniony w OnCheckURL. Usuwane w calosci w Zadaniu 12.
-                var logPath = Path.Combine(Path.GetTempPath(), "mixcloud-spike.log");
-                _hook = new Extensions.MixcloudPlayerHook(logPath);
+                // Adres bezposredniego strumienia zawiera wygasajacy parametr
+                // ?sig=, dlatego cache trzyma go tylko przez 30 minut - patrz
+                // notatki ze spike'u w Zadaniu 2.
+                _mediaSource = new StreamMediaSource(ytDlp, TimeSpan.FromMinutes(30));
+                _hook = new Extensions.MixcloudPlayerHook(_mediaSource);
                 var registered = Player.Core.RegisterExtension(_hook);
                 LogStartup("  RegisterExtension(PlayerHook) -> " + registered.ResultType);
 
@@ -123,6 +126,7 @@ namespace Mixcloud.Plugin
                     Player.Core.UnregisterExtension(_hook);
                     _hook = null;
                 }
+                _mediaSource = null;
             }
             catch (Exception ex)
             {
