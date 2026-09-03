@@ -119,7 +119,7 @@ warstwa weryfikowana wyłącznie ręcznie.
 |---|---|---|
 | `YtDlpService` | prywatna kopia yt-dlp.exe: pobranie, wersjonowanie, auto-update, wywołania procesu | nie |
 | `MixcloudCatalog` | adres Mixclouda → lista pozycji `MixcloudTrack` | nie |
-| `MediaSource` | dostarczenie AIMP grywalnego adresu: rozwiązanie strumienia i odświeżenie wygasłego, albo — w trybie fallback — pobranie pliku do katalogu tymczasowego i zarządzanie nim | nie |
+| `MediaSource` | dostarczenie AIMP grywalnego adresu: rozwiązanie strumienia i odświeżenie wygasłego. Rozważany wariant zapasowy z pobieraniem do katalogu tymczasowego **nie został zrealizowany** — spike wykazał, że strumieniowanie działa | nie |
 | `MixcloudSettings` | handle użytkownika, ścieżki, flagi, serializacja | nie |
 | `Localization` | odczyt napisów z plików `.lng` przez usługę MUI AIMP | tylko usługa MUI |
 | `MixcloudPlugin` | cykl życia wtyczki, menu, strona ustawień, budowa playlisty, rejestracja rozszerzeń `IAimpExtensionPlayerHook` i `IAimpExtensionFileInfoProvider` | tak |
