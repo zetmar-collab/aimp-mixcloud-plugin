@@ -86,17 +86,41 @@ namespace Mixcloud.Plugin
                 // ?sig=, dlatego cache trzyma go tylko przez 30 minut - patrz
                 // notatki ze spike'u w Zadaniu 2.
                 _mediaSource = new StreamMediaSource(ytDlp, TimeSpan.FromMinutes(30));
-                _hook = new Extensions.MixcloudPlayerHook(_mediaSource);
-                var registered = Player.Core.RegisterExtension(_hook);
-                LogStartup("  RegisterExtension(PlayerHook) -> " + registered.ResultType);
+                var hook = new Extensions.MixcloudPlayerHook(_mediaSource);
+                var registered = Player.Core.RegisterExtension(hook);
+                if (registered.ResultType == ActionResultType.OK)
+                {
+                    _hook = hook;
+                    LogStartup("  RegisterExtension(PlayerHook) -> OK");
+                }
+                else
+                {
+                    LogStartup("  RegisterExtension(PlayerHook) -> NIEPOWODZENIE: " + registered.ResultType);
+                }
 
-                _fileInfo = new Extensions.MixcloudFileInfoProvider(Player.Core, ytDlp);
-                var registeredFileInfo = Player.Core.RegisterExtension(_fileInfo);
-                LogStartup("  RegisterExtension(FileInfoProvider) -> " + registeredFileInfo.ResultType);
+                var fileInfo = new Extensions.MixcloudFileInfoProvider(Player.Core, ytDlp);
+                var registeredFileInfo = Player.Core.RegisterExtension(fileInfo);
+                if (registeredFileInfo.ResultType == ActionResultType.OK)
+                {
+                    _fileInfo = fileInfo;
+                    LogStartup("  RegisterExtension(FileInfoProvider) -> OK");
+                }
+                else
+                {
+                    LogStartup("  RegisterExtension(FileInfoProvider) -> NIEPOWODZENIE: " + registeredFileInfo.ResultType);
+                }
 
-                _options = new Ui.OptionsFrame(_ctx, _installer);
-                var registeredOptions = Player.Core.RegisterExtension(_options);
-                LogStartup("  RegisterExtension(OptionsFrame) -> " + registeredOptions.ResultType);
+                var options = new Ui.OptionsFrame(_ctx, _installer);
+                var registeredOptions = Player.Core.RegisterExtension(options);
+                if (registeredOptions.ResultType == ActionResultType.OK)
+                {
+                    _options = options;
+                    LogStartup("  RegisterExtension(OptionsFrame) -> OK");
+                }
+                else
+                {
+                    LogStartup("  RegisterExtension(OptionsFrame) -> NIEPOWODZENIE: " + registeredOptions.ResultType);
+                }
 
                 StartBackgroundSetup();
 
@@ -115,8 +139,30 @@ namespace Mixcloud.Plugin
             LogStartup("Dispose() START");
             try
             {
-                if (_openUrlItem != null) { Player.ServiceMenuManager.Delete(_openUrlItem); _openUrlItem = null; }
-                if (_favoritesItem != null) { Player.ServiceMenuManager.Delete(_favoritesItem); _favoritesItem = null; }
+                if (_openUrlItem != null)
+                {
+                    try
+                    {
+                        Player.ServiceMenuManager.Delete(_openUrlItem);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogStartup("Dispose() ServiceMenuManager.Delete(OpenUrl) WYJATEK: " + ex);
+                    }
+                    _openUrlItem = null;
+                }
+                if (_favoritesItem != null)
+                {
+                    try
+                    {
+                        Player.ServiceMenuManager.Delete(_favoritesItem);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogStartup("Dispose() ServiceMenuManager.Delete(Favorites) WYJATEK: " + ex);
+                    }
+                    _favoritesItem = null;
+                }
 
                 foreach (var action in _actions)
                 {
@@ -133,17 +179,38 @@ namespace Mixcloud.Plugin
 
                 if (_hook != null)
                 {
-                    Player.Core.UnregisterExtension(_hook);
+                    try
+                    {
+                        Player.Core.UnregisterExtension(_hook);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogStartup("Dispose() UnregisterExtension(PlayerHook) WYJATEK: " + ex);
+                    }
                     _hook = null;
                 }
                 if (_fileInfo != null)
                 {
-                    Player.Core.UnregisterExtension(_fileInfo);
+                    try
+                    {
+                        Player.Core.UnregisterExtension(_fileInfo);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogStartup("Dispose() UnregisterExtension(FileInfoProvider) WYJATEK: " + ex);
+                    }
                     _fileInfo = null;
                 }
                 if (_options != null)
                 {
-                    Player.Core.UnregisterExtension(_options);
+                    try
+                    {
+                        Player.Core.UnregisterExtension(_options);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogStartup("Dispose() UnregisterExtension(OptionsFrame) WYJATEK: " + ex);
+                    }
                     _options = null;
                 }
                 _mediaSource = null;

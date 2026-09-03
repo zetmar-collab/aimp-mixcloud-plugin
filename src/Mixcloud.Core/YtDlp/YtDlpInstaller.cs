@@ -106,9 +106,13 @@ namespace Mixcloud.Core.YtDlp
 
                 if (hadExisting) TryDelete(BackupPath);
             }
-            catch (IOException)
+            catch (Exception)
             {
-                // Binarka wciaz zablokowana - sprobujemy przy nastepnym starcie.
+                // Binarka wciaz zablokowana (IOException) albo brak uprawnien
+                // (np. antywirus trzymajacy swiezo pobrany .exe -
+                // UnauthorizedAccessException nie dziedziczy po IOException) -
+                // sprobujemy przy nastepnym starcie. Ta metoda nie moze nigdy
+                // wyrzucic wyjatku, bo Initialize() plugin wyzej go przepuszcza.
             }
         }
 
