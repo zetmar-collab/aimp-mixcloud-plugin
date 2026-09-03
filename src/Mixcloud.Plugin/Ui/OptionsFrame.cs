@@ -4,6 +4,7 @@ using System.Windows.Forms;
 using AIMP.SDK.Options;
 using Mixcloud.Core.Localization;
 using Mixcloud.Core.Settings;
+using Mixcloud.Core.Urls;
 using Mixcloud.Core.YtDlp;
 
 namespace Mixcloud.Plugin.Ui
@@ -56,31 +57,44 @@ namespace Mixcloud.Plugin.Ui
                 }
 
                 var s = _ctx.Strings;
-                _panel = new Panel { Location = new Point(0, 0), Size = new Size(560, 340) };
+                _panel = new Panel { Location = new Point(0, 0), Size = new Size(560, 362) };
 
                 _panel.Controls.Add(Label(s.Get(StringKeys.OptHandle), 12, 15));
-                _handle = new TextBox { Text = _ctx.Settings.Handle };
+                _handle = new TextBox { Text = MixcloudUrl.NormalizeHandle(_ctx.Settings.Handle) };
                 _handle.SetBounds(240, 12, 300, 24);
                 _panel.Controls.Add(_handle);
 
+                // Ludzie czesto wklejaja caly adres profilu zamiast samej nazwy -
+                // pole to akceptuje (patrz MixcloudUrl.NormalizeHandle), ale
+                // podpowiedz zapobiega niepotrzebnej niepewnosci.
+                var handleHint = new Label
+                {
+                    Text = s.Get(StringKeys.OptHandleHint),
+                    AutoSize = false,
+                    Size = new Size(520, 20),
+                    ForeColor = SystemColors.GrayText
+                };
+                handleHint.Location = new Point(12, 38);
+                _panel.Controls.Add(handleHint);
+
                 var loadFavoritesNow = new Button { Text = s.Get(StringKeys.OptLoadFavoritesNow) };
-                loadFavoritesNow.SetBounds(12, 45, 220, 26);
+                loadFavoritesNow.SetBounds(12, 67, 220, 26);
                 loadFavoritesNow.Click += (o, e) => SafeLoadFavoritesNow();
                 _panel.Controls.Add(loadFavoritesNow);
 
-                _panel.Controls.Add(Label(s.Get(StringKeys.OptListingLimit), 12, 87));
+                _panel.Controls.Add(Label(s.Get(StringKeys.OptListingLimit), 12, 109));
                 _limit = new NumericUpDown { Minimum = 1, Maximum = 10000, Value = _ctx.Settings.ListingLimit };
-                _limit.SetBounds(240, 84, 100, 24);
+                _limit.SetBounds(240, 106, 100, 24);
                 _panel.Controls.Add(_limit);
 
-                _panel.Controls.Add(Label(s.Get(StringKeys.OptCacheLimit), 12, 123));
+                _panel.Controls.Add(Label(s.Get(StringKeys.OptCacheLimit), 12, 145));
                 _cacheGb = new NumericUpDown
                 {
                     Minimum = 1,
                     Maximum = 200,
                     Value = Math.Max(1, _ctx.Settings.CacheLimitBytes / (1024L * 1024 * 1024))
                 };
-                _cacheGb.SetBounds(240, 120, 100, 24);
+                _cacheGb.SetBounds(240, 142, 100, 24);
                 _panel.Controls.Add(_cacheGb);
 
                 _autoUpdate = new CheckBox
@@ -89,15 +103,15 @@ namespace Mixcloud.Plugin.Ui
                     Checked = _ctx.Settings.AutoUpdateYtDlp,
                     AutoSize = true
                 };
-                _autoUpdate.Location = new Point(12, 158);
+                _autoUpdate.Location = new Point(12, 180);
                 _panel.Controls.Add(_autoUpdate);
 
-                _panel.Controls.Add(Label(s.Get(StringKeys.OptYtDlpVersion), 12, 195));
-                _version = Label("...", 240, 195);
+                _panel.Controls.Add(Label(s.Get(StringKeys.OptYtDlpVersion), 12, 217));
+                _version = Label("...", 240, 217);
                 _panel.Controls.Add(_version);
 
                 var check = new Button { Text = s.Get(StringKeys.OptCheckNow) };
-                check.SetBounds(12, 226, 220, 28);
+                check.SetBounds(12, 248, 220, 28);
                 check.Click += (o, e) => SafeCheckNow();
                 _panel.Controls.Add(check);
 
@@ -107,7 +121,7 @@ namespace Mixcloud.Plugin.Ui
                     AutoSize = false,
                     Size = new Size(520, 40)
                 };
-                languageNote.Location = new Point(12, 266);
+                languageNote.Location = new Point(12, 288);
                 _panel.Controls.Add(languageNote);
 
                 RefreshVersion();
@@ -147,8 +161,14 @@ namespace Mixcloud.Plugin.Ui
 
                 if (type == OptionsDialogFrameNotificationType.Save)
                 {
-                    MixcloudPlugin.LogStartup("OptionsFrame.Notification(Save): Handle='" + _handle.Text.Trim() + "'");
-                    _ctx.Settings.Handle = _handle.Text.Trim();
+                    // Uzytkownicy czesto wklejaja caly adres profilu zamiast samej
+                    // nazwy - normalizacja wyciaga z niego sama nazwe (patrz
+                    // MixcloudUrl.NormalizeHandle), zamiast zapisac zepsuty adres,
+                    // ktory pozniej wywala sie w ForFavorites.
+                    var normalizedHandle = MixcloudUrl.NormalizeHandle(_handle.Text);
+                    MixcloudPlugin.LogStartup("OptionsFrame.Notification(Save): Handle='" + normalizedHandle + "'");
+                    _handle.Text = normalizedHandle;
+                    _ctx.Settings.Handle = normalizedHandle;
                     _ctx.Settings.ListingLimit = (int)_limit.Value;
                     _ctx.Settings.CacheLimitBytes = (long)_cacheGb.Value * 1024 * 1024 * 1024;
                     _ctx.Settings.AutoUpdateYtDlp = _autoUpdate.Checked;
@@ -156,7 +176,7 @@ namespace Mixcloud.Plugin.Ui
                 }
                 else if (type == OptionsDialogFrameNotificationType.Load)
                 {
-                    _handle.Text = _ctx.Settings.Handle;
+                    _handle.Text = MixcloudUrl.NormalizeHandle(_ctx.Settings.Handle);
                     _limit.Value = _ctx.Settings.ListingLimit;
                     var cacheLimitGb = Math.Max(1, _ctx.Settings.CacheLimitBytes / (1024L * 1024 * 1024));
                     cacheLimitGb = Math.Min(200, cacheLimitGb);
@@ -181,7 +201,7 @@ namespace Mixcloud.Plugin.Ui
         {
             try
             {
-                var handle = _handle.Text.Trim();
+                var handle = MixcloudUrl.NormalizeHandle(_handle.Text);
                 if (string.IsNullOrWhiteSpace(handle))
                 {
                     MessageBox.Show(_ctx.Strings.Get(StringKeys.MsgNoHandle),
@@ -190,6 +210,7 @@ namespace Mixcloud.Plugin.Ui
                     return;
                 }
 
+                _handle.Text = handle;
                 _ctx.Settings.Handle = handle;
                 _ctx.SaveSettings();
 

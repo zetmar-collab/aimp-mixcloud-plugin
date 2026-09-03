@@ -22,6 +22,7 @@ namespace Mixcloud.Core.Localization
         public const string MsgPlaylistFailed   = @"Mixcloud.Messages\PlaylistFailed";
 
         public const string OptHandle           = @"Mixcloud.Options\Handle";
+        public const string OptHandleHint       = @"Mixcloud.Options\HandleHint";
         public const string OptListingLimit     = @"Mixcloud.Options\ListingLimit";
         public const string OptAutoUpdate       = @"Mixcloud.Options\AutoUpdate";
         public const string OptCheckNow         = @"Mixcloud.Options\CheckNow";

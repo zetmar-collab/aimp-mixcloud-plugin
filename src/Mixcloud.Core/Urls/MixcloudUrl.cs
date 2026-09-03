@@ -26,6 +26,39 @@ namespace Mixcloud.Core.Urls
             return Parse("https://www.mixcloud.com/" + handle.Trim() + "/favorites/");
         }
 
+        // Uzytkownicy czesto wklejaja caly adres profilu zamiast samej nazwy
+        // (np. "https://www.mixcloud.com/spartacus/") - pole ustawien ma to
+        // akceptowac zamiast wywalac sie pozniej w ForFavorites. Dopasowanie
+        // hosta jest dokladne, tak samo jak w Parse - wersja bez schematu
+        // ("mixcloud.com/spartacus") jest dopuszczona przez doklejenie
+        // "https://" przed proba parsowania jako URL.
+        public static string NormalizeHandle(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return string.Empty;
+            var trimmed = input.Trim();
+
+            var candidate = trimmed;
+            if (!candidate.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+                !candidate.StartsWith("https://", StringComparison.OrdinalIgnoreCase) &&
+                candidate.IndexOf("mixcloud.com", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                candidate = "https://" + candidate;
+            }
+
+            Uri uri;
+            if (Uri.TryCreate(candidate, UriKind.Absolute, out uri) &&
+                (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+            {
+                var host = uri.Host.ToLowerInvariant();
+                if (host != "mixcloud.com" && host != "www.mixcloud.com") return string.Empty;
+
+                var seg = uri.AbsolutePath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                return seg.Length > 0 ? seg[0] : string.Empty;
+            }
+
+            return trimmed.TrimStart('@').Trim('/');
+        }
+
         public static MixcloudUrl Parse(string raw)
         {
             if (string.IsNullOrWhiteSpace(raw)) return InvalidUrl;

@@ -28,6 +28,7 @@ PlaylistFailed=Nie udało się utworzyć playlisty Mixcloud.
 
 [Mixcloud.Options]
 Handle=Nazwa użytkownika Mixcloud
+HandleHint=Wpisz samą nazwę (np. spartacus) albo wklej cały adres profilu, np. https://www.mixcloud.com/spartacus/
 ListingLimit=Maksymalna liczba pozycji na liście
 AutoUpdate=Aktualizuj yt-dlp automatycznie
 CheckNow=Sprawdź aktualizacje teraz
