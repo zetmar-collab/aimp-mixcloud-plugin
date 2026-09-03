@@ -19,6 +19,43 @@ namespace Mixcloud.Plugin.Playlists
         // 1x1 bitmapa omija ten blad biblioteki bez alokowania osobnej na kazdy utwor.
         private static readonly Bitmap PlaceholderAlbumArt = new Bitmap(1, 1);
 
+        // To samo wewnetrzne CreateFileInfo, ktore wymaga niepustego AlbumArt,
+        // wymaga tez niepustych stringow dla WSZYSTKICH pol tekstowych - kazde
+        // nietkniete zostaje null i przy pierwszym uzyciu rzuca
+        // ArgumentNullException w SetString (potwierdzone w dzienniku dla
+        // AlbumArtist). Zamiast lapac te wlasciwosci jedna po drugiej przy
+        // kolejnych wdrozeniach, inicjalizujemy od razu wszystkie 26 pol
+        // tekstowych z IAimpFileInfo pustym stringiem.
+        private static void ClearAllStringFields(IAimpFileInfo info)
+        {
+            info.CustomData = string.Empty;
+            info.Album = string.Empty;
+            info.AlbumArtist = string.Empty;
+            info.Artist = string.Empty;
+            info.Codec = string.Empty;
+            info.Comment = string.Empty;
+            info.Composer = string.Empty;
+            info.CopyRight = string.Empty;
+            info.CUESheet = string.Empty;
+            info.Date = string.Empty;
+            info.DiskNumber = string.Empty;
+            info.DiskTotal = string.Empty;
+            info.FileName = string.Empty;
+            info.Genre = string.Empty;
+            info.Lyrics = string.Empty;
+            info.Publisher = string.Empty;
+            info.Title = string.Empty;
+            info.TrackNumber = string.Empty;
+            info.TrackTotal = string.Empty;
+            info.URL = string.Empty;
+            info.Conductor = string.Empty;
+            info.Mood = string.Empty;
+            info.Catalog = string.Empty;
+            info.Isrc = string.Empty;
+            info.Lyricist = string.Empty;
+            info.EncodedBy = string.Empty;
+        }
+
         private readonly PluginContext _ctx;
 
         public PlaylistBuilder(PluginContext ctx)
@@ -65,6 +102,7 @@ namespace Mixcloud.Plugin.Playlists
                     if (createdInfo.ResultType != ActionResultType.OK) continue;
 
                     var info = createdInfo.Result;
+                    ClearAllStringFields(info);
                     info.FileName = t.PageUrl;
                     info.Title = t.Title;
                     info.Artist = t.Artist;
