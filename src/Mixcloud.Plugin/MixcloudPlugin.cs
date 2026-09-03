@@ -31,6 +31,7 @@ namespace Mixcloud.Plugin
         private IAimpMenuItem _favoritesItem;
         private IMediaSource _mediaSource;
         private Extensions.MixcloudPlayerHook _hook;
+        private Extensions.MixcloudFileInfoProvider _fileInfo;
 
         // IAimpServiceActionManager nie ma metody wyrejestrowania w tym SDK,
         // wiec jedyny sposob na zwolnienie akcji przy Dispose() to trzymanie
@@ -88,6 +89,10 @@ namespace Mixcloud.Plugin
                 var registered = Player.Core.RegisterExtension(_hook);
                 LogStartup("  RegisterExtension(PlayerHook) -> " + registered.ResultType);
 
+                _fileInfo = new Extensions.MixcloudFileInfoProvider(Player.Core, ytDlp);
+                var registeredFileInfo = Player.Core.RegisterExtension(_fileInfo);
+                LogStartup("  RegisterExtension(FileInfoProvider) -> " + registeredFileInfo.ResultType);
+
                 StartBackgroundSetup();
 
                 LogStartup("Initialize() KONIEC OK");
@@ -125,6 +130,11 @@ namespace Mixcloud.Plugin
                 {
                     Player.Core.UnregisterExtension(_hook);
                     _hook = null;
+                }
+                if (_fileInfo != null)
+                {
+                    Player.Core.UnregisterExtension(_fileInfo);
+                    _fileInfo = null;
                 }
                 _mediaSource = null;
             }
