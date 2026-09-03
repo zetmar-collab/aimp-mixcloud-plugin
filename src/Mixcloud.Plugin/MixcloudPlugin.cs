@@ -107,7 +107,14 @@ namespace Mixcloud.Plugin
 
                 foreach (var action in _actions)
                 {
-                    action.Dispose();
+                    try
+                    {
+                        action.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        LogStartup("Dispose() action.Dispose WYJATEK: " + ex);
+                    }
                 }
                 _actions.Clear();
 
@@ -266,8 +273,15 @@ namespace Mixcloud.Plugin
 
         private void OnMainThread(Action action)
         {
-            // ExecuteInMainThread przyjmuje IAimpTask, nie Action - stad opakowanie.
-            Player.ServiceSynchronizer.ExecuteInMainThread(new DelegateTask(this, action), true);
+            try
+            {
+                // ExecuteInMainThread przyjmuje IAimpTask, nie Action - stad opakowanie.
+                Player.ServiceSynchronizer.ExecuteInMainThread(new DelegateTask(this, action), true);
+            }
+            catch (Exception ex)
+            {
+                LogStartup("OnMainThread ExecuteInMainThread WYJATEK [" + ex.GetType().FullName + "]: " + ex);
+            }
         }
 
         private sealed class DelegateTask : AIMP.SDK.Threading.IAimpTask
