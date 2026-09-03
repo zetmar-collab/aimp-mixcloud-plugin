@@ -54,10 +54,12 @@ namespace Mixcloud.Plugin.Extensions
                         track = MixcloudCatalog.ParseCloudcast(
                             _ytDlp.DumpCloudcast(url, CancellationToken.None));
                         _cache[url.Normalized] = track;
+                        MixcloudPlugin.LogStartup("FileInfoProvider: rozwiazano '" + url.Normalized + "' -> '" + track.Title + "'");
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
                         _cache[url.Normalized] = null;
+                        MixcloudPlugin.LogStartup("FileInfoProvider: nieudane rozwiazanie '" + url.Normalized + "': " + ex.Message);
                         return new AimpActionResult(ActionResultType.Fail);
                     }
                 }

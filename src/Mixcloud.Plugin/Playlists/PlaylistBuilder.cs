@@ -50,6 +50,13 @@ namespace Mixcloud.Plugin.Playlists
                 playlist.EndUpdate();
             }
 
+            // AddList sam z siebie nie odpytuje IAimpExtensionFileInfoProvider -
+            // bez tego wywolania pozycje pokazuja surowy adres URL jako tytul
+            // az do pierwszego odtworzenia. ReloadInfo(false) dziala w tle
+            // (dokumentacja SDK) i dotyczy tylko pozycji bez informacji, wiec
+            // nie odpala ponownie yt-dlp dla juz znanych tytulow.
+            playlist.ReloadInfo(false);
+
             _ctx.Player.ServicePlaylistManager.SetActivePlaylist(playlist);
         }
     }
