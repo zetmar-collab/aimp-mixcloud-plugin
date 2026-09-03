@@ -34,43 +34,51 @@ namespace Mixcloud.Plugin.Extensions
 
         public AimpActionResult GetFileInfo(string fileUri, ref IAimpFileInfo info)
         {
-            info = null;
-
-            var url = MixcloudUrl.Parse(fileUri);
-            if (url.Kind != MixcloudUrlKind.Cloudcast)
-                return new AimpActionResult(ActionResultType.NoInterface);
-
-            MixcloudTrack track;
-            var known = _cache.TryGetValue(url.Normalized, out track);
-            if (known && track == null)
-                return new AimpActionResult(ActionResultType.Fail);
-
-            if (!known)
+            try
             {
-                try
-                {
-                    track = MixcloudCatalog.ParseCloudcast(
-                        _ytDlp.DumpCloudcast(url, CancellationToken.None));
-                    _cache[url.Normalized] = track;
-                }
-                catch (Exception)
-                {
-                    _cache[url.Normalized] = null;
+                info = null;
+
+                var url = MixcloudUrl.Parse(fileUri);
+                if (url.Kind != MixcloudUrlKind.Cloudcast)
+                    return new AimpActionResult(ActionResultType.NoInterface);
+
+                MixcloudTrack track;
+                var known = _cache.TryGetValue(url.Normalized, out track);
+                if (known && track == null)
                     return new AimpActionResult(ActionResultType.Fail);
+
+                if (!known)
+                {
+                    try
+                    {
+                        track = MixcloudCatalog.ParseCloudcast(
+                            _ytDlp.DumpCloudcast(url, CancellationToken.None));
+                        _cache[url.Normalized] = track;
+                    }
+                    catch (Exception)
+                    {
+                        _cache[url.Normalized] = null;
+                        return new AimpActionResult(ActionResultType.Fail);
+                    }
                 }
+
+                var created = _core.CreateAimpObject<IAimpFileInfo>();
+                if (created.ResultType != ActionResultType.OK)
+                    return new AimpActionResult(created.ResultType);
+
+                info = created.Result;
+                info.FileName = url.Normalized;
+                info.Title = track.Title;
+                info.Artist = track.Artist;
+                info.Album = "Mixcloud";
+                info.Duration = track.DurationSeconds;
+                return new AimpActionResult(ActionResultType.OK);
             }
-
-            var created = _core.CreateAimpObject<IAimpFileInfo>();
-            if (created.ResultType != ActionResultType.OK)
-                return new AimpActionResult(created.ResultType);
-
-            info = created.Result;
-            info.FileName = url.Normalized;
-            info.Title = track.Title;
-            info.Artist = track.Artist;
-            info.Album = "Mixcloud";
-            info.Duration = track.DurationSeconds;
-            return new AimpActionResult(ActionResultType.OK);
+            catch (Exception)
+            {
+                info = null;
+                return new AimpActionResult(ActionResultType.Fail);
+            }
         }
 
         public AimpActionResult GetFileInfo(IAimpStream stream, ref IAimpFileInfo info)
