@@ -4,6 +4,7 @@ using System.Linq;
 using AIMP.SDK;
 using AIMP.SDK.Playlist.Objects;
 using Mixcloud.Core.Catalog;
+using Mixcloud.Core.Localization;
 
 namespace Mixcloud.Plugin.Playlists
 {
@@ -25,7 +26,15 @@ namespace Mixcloud.Plugin.Playlists
             // Zawsze nowa playlista - nigdy nie dopisujemy do tej,
             // ktorej uzytkownik wlasnie slucha.
             var created = _ctx.Player.ServicePlaylistManager.CreatePlaylist(name, true);
-            if (created.ResultType != ActionResultType.OK) return;
+            if (created.ResultType != ActionResultType.OK)
+            {
+                System.Windows.Forms.MessageBox.Show(
+                    _ctx.Strings.Get(StringKeys.MsgPlaylistFailed),
+                    _ctx.Strings.Get(StringKeys.MsgError),
+                    System.Windows.Forms.MessageBoxButtons.OK,
+                    System.Windows.Forms.MessageBoxIcon.Warning);
+                return;
+            }
 
             var playlist = created.Result;
             playlist.BeginUpdate();

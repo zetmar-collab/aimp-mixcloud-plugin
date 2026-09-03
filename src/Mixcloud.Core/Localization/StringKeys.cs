@@ -18,6 +18,8 @@ namespace Mixcloud.Core.Localization
         public const string MsgYtDlpFailed      = @"Mixcloud.Messages\YtDlpFailed";
         public const string MsgLoading          = @"Mixcloud.Messages\Loading";
         public const string MsgNoDiskSpace      = @"Mixcloud.Messages\NoDiskSpace";
+        public const string MsgUnexpectedError  = @"Mixcloud.Messages\UnexpectedError";
+        public const string MsgPlaylistFailed   = @"Mixcloud.Messages\PlaylistFailed";
 
         public const string OptHandle           = @"Mixcloud.Options\Handle";
         public const string OptListingLimit     = @"Mixcloud.Options\ListingLimit";

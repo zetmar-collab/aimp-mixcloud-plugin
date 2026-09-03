@@ -23,6 +23,8 @@ YtDlpMissing=Brakuje yt-dlp. Pobrać teraz?
 YtDlpFailed=yt-dlp nie zdołał odczytać tego adresu.
 Loading=Wczytywanie z Mixclouda...
 NoDiskSpace=Za mało wolnego miejsca na dysku, żeby pobrać ten miks.
+UnexpectedError=Wystąpił nieoczekiwany błąd. Sprawdź dziennik wtyczki.
+PlaylistFailed=Nie udało się utworzyć playlisty Mixcloud.
 
 [Mixcloud.Options]
 Handle=Nazwa użytkownika Mixcloud

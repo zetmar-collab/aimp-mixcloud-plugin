@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,6 +29,12 @@ namespace Mixcloud.Plugin
         private IAimpMenuItem _openUrlItem;
         private IAimpMenuItem _favoritesItem;
         private Extensions.MixcloudPlayerHook _hook;
+
+        // IAimpServiceActionManager nie ma metody wyrejestrowania w tym SDK,
+        // wiec jedyny sposob na zwolnienie akcji przy Dispose() to trzymanie
+        // do nich referencji i wywolanie ich wlasnego IDisposable.
+        private readonly List<AIMP.SDK.Actions.Objects.IAimpAction> _actions =
+            new List<AIMP.SDK.Actions.Objects.IAimpAction>();
 
         // Wyjatek rzucony z Initialize sprawia, ze AIMP po cichu porzuca wtyczke
         // i nie pokazuje zadnego bledu. Bez tego dziennika kazda awaria startu
@@ -98,6 +105,12 @@ namespace Mixcloud.Plugin
                 if (_openUrlItem != null) { Player.ServiceMenuManager.Delete(_openUrlItem); _openUrlItem = null; }
                 if (_favoritesItem != null) { Player.ServiceMenuManager.Delete(_favoritesItem); _favoritesItem = null; }
 
+                foreach (var action in _actions)
+                {
+                    action.Dispose();
+                }
+                _actions.Clear();
+
                 if (_hook != null)
                 {
                     Player.Core.UnregisterExtension(_hook);
@@ -133,9 +146,30 @@ namespace Mixcloud.Plugin
             action.Name = item.Name;
             action.GroupName = "Mixcloud";
             action.Enabled = true;
-            action.OnExecute += (s, e) => onClick();
+            action.OnExecute += (s, e) =>
+            {
+                // Wywolywane bezposrednio z dispatchera akcji AIMP - wyjatek
+                // stad nie moze uciec w natywny kod hosta.
+                try
+                {
+                    onClick();
+                }
+                catch (Exception ex)
+                {
+                    LogStartup("AddMenuItem.OnExecute WYJATEK [" + ex.GetType().FullName + "]: " + ex);
+                    try
+                    {
+                        ShowError(StringKeys.MsgUnexpectedError);
+                    }
+                    catch (Exception showEx)
+                    {
+                        LogStartup("AddMenuItem.OnExecute ShowError WYJATEK: " + showEx);
+                    }
+                }
+            };
             Player.ServiceActionManager.Register(action);
             item.Action = action;
+            _actions.Add(action);
 
             Player.ServiceMenuManager.Add(ParentMenuType.PlayerMainOpen, item);
             return item;
@@ -187,6 +221,14 @@ namespace Mixcloud.Plugin
                 {
                     OnMainThread(() => ShowError(StringKeys.MsgYtDlpFailed));
                 }
+                catch (Exception ex)
+                {
+                    // Nic nie moze wypasc z Task.Run bez obserwacji - na .NET
+                    // Framework 4.8 taki blad ginie w ciszy i uzytkownik nie
+                    // dostaje ani playlisty, ani komunikatu.
+                    LogStartup("LoadAsync WYJATEK [" + ex.GetType().FullName + "]: " + ex);
+                    OnMainThread(() => ShowError(StringKeys.MsgUnexpectedError));
+                }
             });
         }
 
@@ -225,14 +267,43 @@ namespace Mixcloud.Plugin
         private void OnMainThread(Action action)
         {
             // ExecuteInMainThread przyjmuje IAimpTask, nie Action - stad opakowanie.
-            Player.ServiceSynchronizer.ExecuteInMainThread(new DelegateTask(action), true);
+            Player.ServiceSynchronizer.ExecuteInMainThread(new DelegateTask(this, action), true);
         }
 
         private sealed class DelegateTask : AIMP.SDK.Threading.IAimpTask
         {
+            private readonly MixcloudPlugin _owner;
             private readonly Action _action;
-            public DelegateTask(Action action) { _action = action; }
-            public void Execute(AIMP.SDK.Threading.IAimpTaskOwner owner) { _action(); }
+
+            public DelegateTask(MixcloudPlugin owner, Action action)
+            {
+                _owner = owner;
+                _action = action;
+            }
+
+            public void Execute(AIMP.SDK.Threading.IAimpTaskOwner owner)
+            {
+                // AIMP wola to z jej synchronizatora watku glownego - wyjatek
+                // stad idzie prosto w natywny kod hosta, wiec nic nie moze
+                // wypasc poza te metode. Guard tutaj chroni kazde uzycie
+                // opakowania, nie tylko biezace wywolanie z OnMainThread.
+                try
+                {
+                    _action();
+                }
+                catch (Exception ex)
+                {
+                    LogStartup("DelegateTask.Execute WYJATEK [" + ex.GetType().FullName + "]: " + ex);
+                    try
+                    {
+                        _owner.ShowError(StringKeys.MsgUnexpectedError);
+                    }
+                    catch (Exception showEx)
+                    {
+                        LogStartup("DelegateTask.Execute ShowError WYJATEK: " + showEx);
+                    }
+                }
+            }
         }
 
         private void ShowError(string messageKey)

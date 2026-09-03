@@ -23,6 +23,8 @@ YtDlpMissing=yt-dlp is missing. Download it now?
 YtDlpFailed=yt-dlp could not read this address.
 Loading=Loading from Mixcloud...
 NoDiskSpace=Not enough free disk space to download this mix.
+UnexpectedError=An unexpected error occurred. Check the plugin log.
+PlaylistFailed=Could not create the Mixcloud playlist.
 
 [Mixcloud.Options]
 Handle=Mixcloud username
