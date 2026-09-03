@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AIMP.SDK;
+using AIMP.SDK.FileManager.Objects;
 using AIMP.SDK.Playlist.Objects;
 using Mixcloud.Core.Catalog;
 using Mixcloud.Core.Localization;
@@ -40,22 +41,40 @@ namespace Mixcloud.Plugin.Playlists
             playlist.BeginUpdate();
             try
             {
-                IList<string> urls = listing.Tracks.Select(t => t.PageUrl).ToList();
+                // Budujemy IAimpFileInfo z gory zamiast dodawac gole adresy URL.
+                // AddList(IList<string>,...) pokazuje w widoku playlisty sam adres
+                // az do pierwszego odtworzenia - ReloadInfo() odpytuje
+                // IAimpExtensionFileInfoProvider w tle i faktycznie rozwiazuje
+                // tytuly (potwierdzone w dzienniku), ale AIMP nie przerysowuje
+                // juz wyswietlonych wierszy, wiec uzytkownik nadal widzi URL-e.
+                // Przekazanie gotowego tytulu/wykonawcy juz w AddList omija ten
+                // problem calkowicie - flaga FileInfo mowi AIMP, ze lista
+                // zawiera IAimpFileInfo, a nie string.
+                var items = new List<IAimpFileInfo>();
+                foreach (var t in listing.Tracks)
+                {
+                    var createdInfo = _ctx.Player.Core.CreateAimpObject<IAimpFileInfo>();
+                    if (createdInfo.ResultType != ActionResultType.OK) continue;
+
+                    var info = createdInfo.Result;
+                    info.FileName = t.PageUrl;
+                    info.Title = t.Title;
+                    info.Artist = t.Artist;
+                    info.Album = "Mixcloud";
+                    info.Duration = t.DurationSeconds;
+                    items.Add(info);
+                }
+
                 // NoCheckFormat: adresy Mixclouda nie sa plikami, ktore AIMP
                 // umie rozpoznac po rozszerzeniu.
-                playlist.AddList(urls, PlaylistFlags.NoCheckFormat, PlaylistFilePosition.EndPosition);
+                playlist.AddList((IList<IAimpFileInfo>)items,
+                    PlaylistFlags.NoCheckFormat | PlaylistFlags.FileInfo,
+                    PlaylistFilePosition.EndPosition);
             }
             finally
             {
                 playlist.EndUpdate();
             }
-
-            // AddList sam z siebie nie odpytuje IAimpExtensionFileInfoProvider -
-            // bez tego wywolania pozycje pokazuja surowy adres URL jako tytul
-            // az do pierwszego odtworzenia. ReloadInfo(false) dziala w tle
-            // (dokumentacja SDK) i dotyczy tylko pozycji bez informacji, wiec
-            // nie odpala ponownie yt-dlp dla juz znanych tytulow.
-            playlist.ReloadInfo(false);
 
             _ctx.Player.ServicePlaylistManager.SetActivePlaylist(playlist);
         }
